@@ -11,6 +11,7 @@ import {
   FaCheck,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import ContactActions from "../../components/item/ContactActions";
 
 const SingleLostItem = () => {
   const { lostItem: lostItemId } = useParams<{ lostItem: string }>();
@@ -227,6 +228,15 @@ const SingleLostItem = () => {
                 </div>
               )}
             </div>
+
+            {/* Message the reporter / WhatsApp handoff */}
+            <ContactActions
+              ownerUserId={user?.id}
+              ownerUsername={user?.username}
+              ownerPhone={user?.phone}
+              itemName={lostItemName}
+              context="lost"
+            />
           </div>
         </div>
       </div>

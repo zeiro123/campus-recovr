@@ -6,10 +6,14 @@ import { StatusCodes } from "http-status-codes";
 const auth = () => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const token = req.headers.authorization;
-      if (!token) {
+      const raw = req.headers.authorization;
+      if (!raw) {
         throw new AppError(StatusCodes.UNAUTHORIZED, "You are not authorized!");
       }
+      // Accept both "Bearer <token>" and a raw token (upstream clients send both).
+      const token = raw.startsWith("Bearer ")
+        ? raw.slice(7).trim()
+        : raw.trim();
       const verifiedUser = utils.verifyToken(token);
       req.user = verifiedUser;
 

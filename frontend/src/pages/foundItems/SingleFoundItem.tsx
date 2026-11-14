@@ -20,6 +20,7 @@ import {
   FaBoxOpen,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import ContactActions from "../../components/item/ContactActions";
 
 const SingleFoundItem = () => {
   const { foundItem: foundItemParam } = useParams<{ foundItem: string }>();
@@ -256,6 +257,15 @@ const SingleFoundItem = () => {
                   </div>
                 </dl>
               </div>
+
+              {/* Contact the finder */}
+              <ContactActions
+                ownerUserId={foundItemData?.user?.id}
+                ownerUsername={foundItemData?.user?.username}
+                ownerPhone={foundItemData?.user?.phone}
+                itemName={foundItemData?.foundItemName || "this item"}
+                context="found"
+              />
 
               {/* Claim Process Information */}
               <div className="card p-6">

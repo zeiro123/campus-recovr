@@ -16,6 +16,7 @@ import {
   FaSignOutAlt,
   FaUser,
   FaList,
+  FaComments,
 } from "react-icons/fa";
 import { useUserVerification, signOut } from "../auth/auth";
 import "react-toastify/dist/ReactToastify.css";
@@ -98,6 +99,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       title: "My Claims",
       icon: <FaBoxOpen />,
       path: "/dashboard/myClaimRequest",
+      badge: null,
+      adminOnly: false,
+    },
+    {
+      title: "Messages",
+      icon: <FaComments />,
+      path: "/messages",
       badge: null,
       adminOnly: false,
     },

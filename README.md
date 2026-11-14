@@ -1,5 +1,14 @@
 # 🎓 Campus RecovR — Lost & Found for the University of Zimbabwe
 
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![License](https://img.shields.io/badge/License-ISC-blue)
+
 A free, community-run lost & found platform for UZ students. Lost your student ID (again — and a replacement costs $20?), your phone, or your laptop? Report it in seconds, search what others found, claim matches, and leave a testimonial. No PII required — just an email and a username.
 
 **Forked from [alamin147/lost-and-found](https://github.com/alamin147/lost-and-found)** — rebranded and set up for local development with a self-contained PostgreSQL cluster.
@@ -9,12 +18,16 @@ A free, community-run lost & found platform for UZ students. Lost your student I
 ## ✨ Features
 
 - 🔐 Email + password accounts with usernames (no PII) — JWT auth, bcrypt hashing
-- 📝 Report lost items (title, description, category, location, date, image)
+- 📝 Report lost items (title, description, category, location, date, **photo upload**)
 - 🎒 Register found items you picked up on campus
+- 🖼️ Image upload — pick a PNG/JPEG/WebP/GIF straight from your device (replaces the old URL field)
 - 🔍 Search + filter both listings (name, location, description; sort options)
 - 🤝 Claim system for matching lost ↔ found items, with status tracking
+- 💬 **On-platform chat** — 1:1 conversations from any item page ("hey, I need this"), live via polling, with unread badges
+- 📱 **WhatsApp handoff** — optionally share your number in Settings; your listings then show a "Chat on WhatsApp" button (Zimbabwe +263 numbers handled automatically)
 - 🤖 AI-powered search (Google Gemini) with automatic fallback to keyword search
-- 📊 User dashboard (my items, my claims) + admin dashboard (users, claims, categories, stats)
+- 🧭 **AI assistant** — floating helper button with quick links and a skippable guided walkthrough of the main features
+- 📊 User dashboard (my items, my claims, messages) + admin dashboard (users, claims, categories, stats)
 - ⭐ Testimonials / reviews page
 - 📱 Responsive dark UI
 
@@ -24,10 +37,16 @@ A free, community-run lost & found platform for UZ students. Lost your student I
 
 | Layer | Tech |
 |-------|------|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Flowbite React, Redux Toolkit, React Router |
-| Backend | Node.js, Express, TypeScript, Prisma ORM |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Flowbite React, Redux Toolkit (RTK Query), React Router, React Hook Form, React Icons, React Toastify |
+| Backend | Node.js 18+, Express, TypeScript, Multer (uploads), Prisma ORM |
 | Database | PostgreSQL (local cluster now → **Supabase later**, see below) |
 | Auth | JWT + bcrypt |
+| AI | Google Gemini API (optional — keyword-search fallback) |
+
+### 👥 User Roles
+
+- 👤 **User** — register, log in, report lost/found items, claim, chat, manage profile & WhatsApp number
+- 👨‍💻 **Admin** — everything above plus user management, claims moderation, categories, and dashboard analytics
 
 ---
 
@@ -98,12 +117,16 @@ Prisma makes the swap a one-liner: change `DATABASE_URL` in `server/.env` to the
 | `POST /api/register` / `POST /api/login` | Accounts (login body: `{ username, password }` — username field accepts email too) |
 | `GET /api/found-items` · `GET /api/lostItem` | Public listings with filtering |
 | `POST /api/lostItem` · `POST /api/found-items` | Report items (auth) |
+| `POST /api/upload` | Image upload — multipart field `image`, PNG/JPEG/WebP/GIF, max 5 MB (auth) |
 | `GET /api/my/lostItem` · `GET /api/my/foundItem` · `GET /api/my/claims` | Own items/claims (auth) |
 | `POST /api/claims` | Claim a found item (auth) |
 | `GET /api/item-categories` | Categories |
+| `POST /api/chats` · `GET /api/my/chats` | Get-or-create a 1:1 conversation · list mine (auth) |
+| `GET /api/chats/:id/messages` · `POST /api/chats/:id/messages` · `PUT /api/chats/:id/read` | Thread (supports `?after=` polling) · send · mark read (auth) |
+| `PUT /api/user/phone` | Save/remove your WhatsApp number (auth) |
 | `POST /api/ai-search` | AI search (falls back to keywords without a key) |
 
-> 🔑 **Auth quirk (upstream behavior):** the API expects the raw JWT in the `Authorization` header — **no `Bearer` prefix**.
+> 🔑 **Auth:** the API accepts both `Bearer <token>` and a raw token in the `Authorization` header (upstream clients send the Bearer form).
 
 > 📅 **Date format:** item dates must be full ISO-8601 (`2026-11-13T12:00:00.000Z`).
 
@@ -114,7 +137,8 @@ Prisma makes the swap a one-liner: change `DATABASE_URL` in `server/.env` to the
 ```
 Campus_RecovR/
 ├── frontend/           # React + Vite app (src/pages, src/dashboard, src/components, src/redux)
-├── server/             # Express API (src/app/modules, prisma/schema.prisma, pg.mjs)
+├── server/             # Express API (src/app/modules, src/app/chat, src/app/upload, prisma, pg.mjs)
+├── uploads/            # uploaded item images, served at /uploads (runtime, gitignored)
 └── .pgdata/            # local PostgreSQL cluster (gitignored)
 ```
 

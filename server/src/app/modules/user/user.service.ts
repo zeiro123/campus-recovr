@@ -133,10 +133,22 @@ const softDeleteUser = async (id: string) => {
   };
 };
 
+// Optional profile phone number — powers the WhatsApp handoff on item pages.
+const updateUserPhone = async (id: string, phone: string) => {
+  const clean = (phone ?? "").replace(/[^\d+]/g, "").slice(0, 20);
+  const updated = await prisma.user.update({
+    where: { id },
+    data: { phone: clean },
+    select: { id: true, username: true, phone: true },
+  });
+  return updated;
+};
+
 export const userService = {
   registerUser,
   allUsers,
   blockUser,
   changeUserRole,
   softDeleteUser,
+  updateUserPhone,
 };

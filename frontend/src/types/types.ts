@@ -24,6 +24,7 @@ export type decodedUser = {
   name?: string;
   username?: string;
   userImg?: string;
+  phone?: string;
   iat?: number;
   exp?: number;
 };

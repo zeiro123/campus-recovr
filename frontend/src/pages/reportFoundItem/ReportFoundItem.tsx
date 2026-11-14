@@ -9,11 +9,16 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { IoIosArrowDown } from "react-icons/io";
-import { FaBullhorn } from "react-icons/fa";
+import { FaBullhorn, FaTimes } from "react-icons/fa";
 import type { ItemCategory } from "../../types/types";
+import {
+  IMAGE_ACCEPT,
+  MAX_IMAGE_BYTES,
+  formatBytes,
+  uploadImageFile,
+} from "../../utils/uploadImage";
 
 type ReportFoundForm = {
-  imgUrl: string;
   foundItemName: string;
   description: string;
   location: string;
@@ -33,14 +38,45 @@ const ReportFoundItem = () => {
   const [createFoundItem, { isLoading }] = useCreateFoundItemMutation();
   const { data: Category } = useCategoryQuery("");
   const [startDate, setStartDate] = useState(new Date());
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  const pickImage = (file: File | null) => {
+    setImageError("");
+    if (!file) {
+      setImageFile(null);
+      setImagePreview(null);
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError(`Image is too large — max ${formatBytes(MAX_IMAGE_BYTES)}.`);
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageError("");
+  };
 
   const onSubmit = async (data: ReportFoundForm) => {
     setSubmitted(true);
-    if (!categoryId) return;
+    if (!categoryId || uploading) return;
 
     try {
+      let imageUrl = "";
+      if (imageFile) {
+        setUploading(true);
+        imageUrl = await uploadImageFile(imageFile);
+      }
+
       const foundData = {
-        img: data.imgUrl,
+        img: imageUrl,
         categoryId,
         foundItemName: data.foundItemName,
         description: data.description,
@@ -58,9 +94,15 @@ const ReportFoundItem = () => {
         reset();
         setCategoryId("");
         setSubmitted(false);
+        clearImage();
       }
-    } catch {
-      toastNotify({ message: "Failed to create Found item", status: false });
+    } catch (err: any) {
+      toastNotify({
+        message: err?.message || "Failed to create Found item",
+        status: false,
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -122,23 +164,36 @@ const ReportFoundItem = () => {
             </div>
 
             <div>
-              <label htmlFor="imgUrl" className="field-label">
-                Image url
+              <label htmlFor="itemImage" className="field-label">
+                Photo (optional)
               </label>
               <input
-                id="imgUrl"
-                type="text"
-                className="field"
-                placeholder="http://found-image.com"
-                {...register("imgUrl", {
-                  required: "Image url is required",
-                })}
+                id="itemImage"
+                type="file"
+                accept={IMAGE_ACCEPT}
+                className="field cursor-pointer file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+                onChange={(e) => pickImage(e.target.files?.[0] ?? null)}
               />
-              {errors.imgUrl && (
-                <p className="field-error">
-                  {errors.imgUrl?.message as string}
-                </p>
+              {imagePreview && (
+                <div className="mt-2 flex items-center gap-3">
+                  <img
+                    src={imagePreview}
+                    alt="Selected item preview"
+                    className="h-16 w-16 rounded-lg border border-line object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearImage}
+                    className="flex items-center gap-1 text-xs text-ink-mute transition hover:text-ink"
+                  >
+                    <FaTimes className="h-3 w-3" /> Remove
+                  </button>
+                </div>
               )}
+              {imageError && <p className="field-error">{imageError}</p>}
+              <p className="mt-1 text-[11px] text-ink-mute">
+                PNG, JPEG, WebP or GIF — up to 5 MB.
+              </p>
             </div>
             <div>
               <label htmlFor="location" className="field-label">
@@ -232,7 +287,7 @@ const ReportFoundItem = () => {
             </div>
           </div>
 
-          {isLoading ? (
+          {isLoading || uploading ? (
             <div className="flex justify-center">
               <Spinner size="lg" className="text-accent" />
             </div>

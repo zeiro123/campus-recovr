@@ -111,10 +111,28 @@ const allUsers = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+const updatePhone = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { phone } = req.body;
+    const result = await userService.updateUserPhone(req.user.id, phone);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: result.phone
+        ? "Phone number saved"
+        : "Phone number removed",
+      data: result,
+    });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
 export const userController = {
   registerUser,
   allUsers,
   blockUser,
   changeUserRole,
   softDeleteUser,
+  updatePhone,
 };

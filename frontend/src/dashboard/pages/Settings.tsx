@@ -6,6 +6,7 @@ import {
   FaEnvelope,
   FaUserTag,
   FaShieldAlt,
+  FaWhatsapp,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
@@ -15,6 +16,7 @@ import {
   useChangeEmailMutation,
   useChangeUsernameMutation,
 } from "../../redux/api/api";
+import { useSavePhoneMutation } from "../../redux/api/chatApi";
 import { removeUserLocalStorage, useUserVerification } from "../../auth/auth";
 import { useNavigate } from "react-router-dom";
 
@@ -22,12 +24,14 @@ const Settings = () => {
   const navigate = useNavigate();
   const user = useUserVerification();
   const [showPassword, setShowPassword] = useState(false);
+  const [phone, setPhone] = useState(user?.phone || "");
 
   const [changePassword, { isLoading: isPasswordLoading }] =
     useChangePasswordMutation();
   const [changeEmail, { isLoading: isEmailLoading }] = useChangeEmailMutation();
   const [changeUsername, { isLoading: isUsernameLoading }] =
     useChangeUsernameMutation();
+  const [savePhone, { isLoading: isPhoneLoading }] = useSavePhoneMutation();
 
   const passwordForm = useForm<{
     currentPassword: string;
@@ -160,6 +164,57 @@ const Settings = () => {
 
         {/* Forms */}
         <div className="lg:col-span-2 space-y-6">
+          {/* WhatsApp Number */}
+          <div className="card p-6">
+            <div className="mb-5 flex items-center gap-3">
+              <FaWhatsapp className="text-lg text-emerald-400" />
+              <h2 className="text-lg font-semibold text-ink">
+                WhatsApp Number
+              </h2>
+            </div>
+            <p className="mb-4 text-sm text-ink-dim">
+              Optional. If you share it, people who see your listed items get a
+              "Chat on WhatsApp" button that opens a chat with you. Leave it
+              blank to stay on-platform only.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="field flex-1"
+                placeholder="e.g. 0772 123 4567"
+                maxLength={20}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await savePhone(phone).unwrap();
+                    if (res?.success === false) {
+                      toast.error("Failed to save your phone number.");
+                      return;
+                    }
+                    toast.success(
+                      phone.trim()
+                        ? "WhatsApp number saved!"
+                        : "Phone number removed."
+                    );
+                  } catch (err: any) {
+                    toast.error(
+                      getErrorMessage(err, "Failed to save your phone number.")
+                    );
+                  }
+                }}
+                disabled={isPhoneLoading}
+                className="btn btn-brand sm:w-36"
+              >
+                {isPhoneLoading ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+
           {/* Change Password */}
           <div className="card p-6">
             <div className="mb-5 flex items-center gap-3">

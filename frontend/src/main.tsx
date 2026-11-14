@@ -25,6 +25,7 @@ import MyLostItems from "./dashboard/myLostItems/MyLostItems.tsx";
 import ReportLostItem from "./pages/reportlostItem/ReportLostItem.tsx";
 import ReportFoundItem from "./pages/reportFoundItem/ReportFoundItem.tsx";
 import AiSearch from "./pages/aiSearch/AiSearch.tsx";
+import Messages from "./pages/messages/Messages.tsx";
 import NotFound from "./pages/notFound/NotFound.tsx";
 import { RequireAuth, RequireAdmin } from "./components/guards/ProtectedRoute.tsx";
 
@@ -72,6 +73,14 @@ const router = createBrowserRouter([
       {
         path: "/ai-search",
         element: <AiSearch />,
+      },
+      {
+        path: "/messages",
+        element: <Messages />,
+      },
+      {
+        path: "/messages/:chatId",
+        element: <Messages />,
       },
       {
         path: "*",

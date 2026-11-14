@@ -16,6 +16,8 @@ import { adminStats } from "../utils/adminStats";
 import { aiSearchController } from "../modules/aiSearch/aiSearch.controller";
 import { aiSearchValidation } from "../modules/aiSearch/aiSearch.validate";
 import { recentActivity } from "../utils/recentActivity";
+import { chatController } from "../chat/chat.controller";
+import { uploadController, upload } from "../upload/upload.controller";
 
 const router = express.Router();
 ////////////////////////////////////////////////// user //////////////////////////////////////////////
@@ -168,5 +170,23 @@ router.post(
 
 // recent activity (admin dashboard feed)
 router.get("/recent-activity", auth(), recentActivity);
+
+// image upload (multipart form field: "image")
+router.post("/upload", auth(), upload.single("image"), uploadController.uploadImage);
+
+// profile phone number (optional, used for the WhatsApp handoff)
+router.put("/user/phone", auth(), userController.updatePhone);
+
+//////////////////////////////////////////////////chat//////////////////////////////////////////////
+// get (or create) a 1:1 conversation with a user
+router.post("/chats", auth(), chatController.createChat);
+// list my conversations (with last message + unread count)
+router.get("/my/chats", auth(), chatController.getMyChats);
+// messages of one conversation; supports ?after=<ISO> for polling
+router.get("/chats/:id/messages", auth(), chatController.getChatMessages);
+// send a message
+router.post("/chats/:id/messages", auth(), chatController.sendMessage);
+// mark incoming messages read
+router.put("/chats/:id/read", auth(), chatController.markChatRead);
 
 export default router;

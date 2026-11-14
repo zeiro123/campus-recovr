@@ -11,6 +11,7 @@ const foundItemSelect = {
       id: true,
       username: true,
       email: true,
+      phone: true,
       createdAt: true,
       updatedAt: true,
     },

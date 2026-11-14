@@ -20,10 +20,14 @@ name   String @default("")
   foundItem FoundItem[]
   claim     Claim[]
   userImg   String      @default("")
+  phone     String      @default("")
   isDeleted Boolean     @default(false)
   deletedAt DateTime?
   // profile   UserProfile?
   LostItem  LostItem[]
+  conversationsOne Conversation[] @relation("ConversationsOne")
+  conversationsTwo Conversation[] @relation("ConversationsTwo")
+  chatMessages     ChatMessage[]
 
   @@map("users")
 }
@@ -108,4 +112,33 @@ enum status {
 enum userRole {
   ADMIN
   USER
+}
+
+model Conversation {
+  id        String        @id @default(uuid())
+  userOneId String
+  userTwoId String
+  userOne   User          @relation("ConversationsOne", fields: [userOneId], references: [id])
+  userTwo   User          @relation("ConversationsTwo", fields: [userTwoId], references: [id])
+  messages  ChatMessage[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  isDeleted Boolean       @default(false)
+
+  @@unique([userOneId, userTwoId])
+  @@map("conversations")
+}
+
+model ChatMessage {
+  id             String       @id @default(uuid())
+  conversationId String
+  senderId       String
+  body           String
+  isRead         Boolean      @default(false)
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  sender         User         @relation(fields: [senderId], references: [id])
+  createdAt      DateTime     @default(now())
+  isDeleted      Boolean      @default(false)
+
+  @@map("chatMessages")
 }
