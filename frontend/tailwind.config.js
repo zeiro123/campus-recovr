@@ -13,29 +13,33 @@ export default {
         sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // ── Refined dark design tokens ─────────────────────────────
-        canvas: '#0a0a0c',                       // page background
+        // ── University of Zimbabwe palette (dark navy + UZ orange) ──
+        canvas: '#0b1424',                       // page background (deep navy)
         surface: {                               // panels / cards
-          DEFAULT: '#101014',
-          2: '#15151a',                          // inputs, inset areas
-          3: '#1c1c22',                          // raised / hover fill
-          4: '#24242c',                          // strongest fill
+          DEFAULT: '#111e33',
+          2: '#16263f',                          // inputs, inset areas
+          3: '#1c304e',                          // raised / hover fill
+          4: '#243a5c',                          // strongest fill
         },
         line: {                                  // hairline borders
-          DEFAULT: 'rgba(255,255,255,0.07)',
-          strong: 'rgba(255,255,255,0.14)',
+          DEFAULT: 'rgba(148,180,255,0.09)',
+          strong: 'rgba(148,180,255,0.18)',
         },
         ink: {                                   // text ramp (all ≥4.5:1 on canvas/surface)
-          DEFAULT: '#f4f4f5',
-          dim: '#a1a1aa',
-          mute: '#83838d',
+          DEFAULT: '#f4f6fb',
+          dim: '#b6c2d9',
+          mute: '#8d9cb8',
         },
         accent: {
-          DEFAULT: '#38bdf8',                    // sky-400
-          soft: '#7dd3fc',                       // sky-300
-          strong: '#0ea5e9',                     // sky-500
-          deep: '#0284c7',                       // sky-600
-          ink: '#06121c',                        // text on accent fills
+          DEFAULT: '#F87D0D',                    // UZ orange (top nav bar)
+          soft: '#F0A030',                       // UZ amber stripe
+          strong: '#E06F00',
+          deep: '#C25E00',
+          ink: '#2b1602',                        // text on accent fills
+        },
+        'accent2': {
+          DEFAULT: '#1E56A0',                    // UZ royal blue bands
+          soft: '#3F6FC1',                       // UZ nav-link blue
         },
         ok: '#34d399',
         warn: '#fbbf24',
@@ -44,7 +48,7 @@ export default {
       boxShadow: {
         card: '0 1px 0 0 rgba(255,255,255,0.03) inset, 0 12px 32px -18px rgba(0,0,0,0.9)',
         pop: '0 24px 48px -20px rgba(0,0,0,0.85)',
-        glow: '0 10px 30px -12px rgba(56,189,248,0.45)',
+        glow: '0 10px 30px -12px rgba(248,125,13,0.45)',
         ring: '0 0 0 1px rgba(255,255,255,0.06)',
       },
       animation: {

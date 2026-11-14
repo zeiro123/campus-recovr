@@ -20,6 +20,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toastNotify from "../../components/modal/toastNotify";
 import QueryErrorBanner from "../../components/QueryErrorBanner";
+import ItemPhoto from "../../components/item/ItemPhoto";
 
 type MyLostItem = {
   id: string;
@@ -79,6 +80,44 @@ const MyLostItems = () => {
     setIsDeleteModalOpen(false);
     setItemToDelete(null);
     setIsDeleting(false);
+  };
+
+  // "Found it" flow: confirm, then the item is removed from the database.
+  const [isFoundModalOpen, setIsFoundModalOpen] = useState(false);
+  const [itemToMarkFound, setItemToMarkFound] = useState<MyLostItem | null>(null);
+  const [isMarkingFound, setIsMarkingFound] = useState(false);
+
+  const handleFoundClick = (item: MyLostItem) => {
+    setItemToMarkFound(item);
+    setIsFoundModalOpen(true);
+  };
+
+  const handleFoundConfirm = async () => {
+    if (!itemToMarkFound) return;
+    setIsMarkingFound(true);
+    try {
+      const res = await deleteMyLostItem(itemToMarkFound.id);
+      if (res?.data?.statusCode == 200) {
+        toastNotify({
+          message: "Marked as found — removed from listings 🎉",
+          status: true,
+        });
+      } else {
+        toastNotify({ message: "Failed to update the item", status: false });
+      }
+    } catch {
+      toastNotify({ message: "Failed to update the item", status: false });
+    } finally {
+      setIsMarkingFound(false);
+      setIsFoundModalOpen(false);
+      setItemToMarkFound(null);
+    }
+  };
+
+  const handleFoundCancel = () => {
+    setIsFoundModalOpen(false);
+    setItemToMarkFound(null);
+    setIsMarkingFound(false);
   };
 
   const [editMyLostItem] = useEditMyLostItemMutation();
@@ -298,6 +337,14 @@ const MyLostItems = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
                           <button
+                            onClick={() => handleFoundClick(myLostItem)}
+                            className="btn btn-sm btn-primary"
+                            title="Mark as found and remove from listings"
+                          >
+                            <FaCheckCircle />
+                            Found it
+                          </button>
+                          <button
                             onClick={() => openModal(myLostItem)}
                             className="btn btn-sm btn-outline"
                             title="Edit item"
@@ -490,6 +537,89 @@ const MyLostItems = () => {
                     </>
                   ) : (
                     "Delete Item"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalBody>
+      </Modal>
+
+      {/* Mark as Found Confirmation Modal */}
+      <Modal
+        show={isFoundModalOpen}
+        size="md"
+        popup={true}
+        onClose={handleFoundCancel}
+        className="border border-line bg-surface shadow-pop"
+      >
+        <ModalHeader className="border-b border-line">
+          <h3 className="text-xl font-semibold text-ink">Mark as Found</h3>
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-6 p-2">
+            <div className="text-center">
+              <div className="mb-4">
+                <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-emerald-500/10">
+                  <FaCheckCircle className="text-xl text-emerald-400" />
+                </div>
+                <h3 className="mb-2 text-lg font-medium text-ink">
+                  Great — you found it?
+                </h3>
+                <p className="mb-4 text-sm text-ink-mute">
+                  Confirming will remove this item from the database and all
+                  listings. This action cannot be undone.
+                </p>
+              </div>
+
+              {itemToMarkFound && (
+                <div className="mb-6 rounded-xl border border-line bg-surface-2 p-4 text-left">
+                  <div className="flex items-center">
+                    <ItemPhoto
+                      src={itemToMarkFound?.img}
+                      alt={itemToMarkFound?.lostItemName}
+                      className="mr-4 h-12 w-12 rounded-lg"
+                    />
+                    <div>
+                      <h4 className="mb-1 font-medium text-ink">
+                        {itemToMarkFound?.lostItemName}
+                      </h4>
+                      <p className="mb-1 text-sm text-ink-mute">
+                        {itemToMarkFound?.description}
+                      </p>
+                      <div className="flex justify-between text-sm text-ink-mute">
+                        <span>Location: {itemToMarkFound?.location}</span>
+                        <span>
+                          Date: {itemToMarkFound?.date?.split("T")[0]}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-center space-x-3">
+                <button
+                  type="button"
+                  onClick={handleFoundCancel}
+                  disabled={isMarkingFound}
+                  className="btn btn-outline"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFoundConfirm}
+                  disabled={isMarkingFound}
+                  className="btn btn-primary"
+                >
+                  {isMarkingFound ? (
+                    <>
+                      <Spinner size="sm" className="mr-2 text-accent" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Yes, I found it"
                   )}
                 </button>
               </div>
