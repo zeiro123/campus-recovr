@@ -6,29 +6,45 @@ import { setUserLocalStorage } from "../../auth/auth";
 import { useLoginMutation } from "../../redux/api/api";
 import { Link, useNavigate } from "react-router-dom";
 import { MdEmail, MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { FaGoogle, FaFacebook } from "react-icons/fa";
 import { useState } from "react";
+import { supabase, oauthConfigured } from "../../lib/supabase";
 
 const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "facebook" | null>(
+    null
+  );
   const {
     handleSubmit,
     register,
     formState: { errors },
-    setValue,
   } = useForm<{ username: string; password: string }>();
 
   const [login, { isLoading }] = useLoginMutation();
 
-  // Auto-fill for demo accounts (matches the seeded database)
-  const fillAdminCredentials = () => {
-    setValue("username", "admin");
-    setValue("password", "admin123");
-  };
-
-  const fillUserCredentials = () => {
-    setValue("username", "demo");
-    setValue("password", "demo1234");
+  // OAuth sign-in: Supabase handles the provider flow, then the callback page
+  // exchanges the verified Supabase session for the app's own JWT.
+  const signInWithProvider = async (provider: "google" | "facebook") => {
+    if (!supabase) {
+      toastNotify({ message: "Social sign-in is not configured", status: false });
+      return;
+    }
+    setOauthLoading(provider);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/oauth/callback`,
+      },
+    });
+    if (error) {
+      setOauthLoading(null);
+      toastNotify({
+        message: `${provider === "google" ? "Google" : "Facebook"} sign-in isn't configured yet.`,
+        status: false,
+      });
+    }
   };
 
   const onSubmit = async (data: { username: string; password: string }) => {
@@ -130,31 +146,49 @@ const Login = () => {
             </button>
           )}
 
-          {/* Demo Login Buttons */}
+          {/* Social sign-in */}
           <div className="space-y-3">
             <div className="flex items-center">
               <div className="flex-grow border-t border-line"></div>
               <span className="px-3 text-center text-xs font-semibold uppercase tracking-wider text-ink-mute">
-                Quick Demo Login
+                or continue with
               </span>
               <div className="flex-grow border-t border-line"></div>
             </div>
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={fillAdminCredentials}
-                className="btn btn-outline w-full"
+                onClick={() => signInWithProvider("google")}
+                disabled={oauthLoading !== null}
+                className="btn btn-outline flex w-full items-center justify-center gap-2"
               >
-                Login as Admin
+                {oauthLoading === "google" ? (
+                  <Spinner size="sm" className="text-accent" />
+                ) : (
+                  <FaGoogle className="text-[#DB4437]" />
+                )}
+                Google
               </button>
               <button
                 type="button"
-                onClick={fillUserCredentials}
-                className="btn btn-outline w-full"
+                onClick={() => signInWithProvider("facebook")}
+                disabled={oauthLoading !== null}
+                className="btn btn-outline flex w-full items-center justify-center gap-2"
               >
-                Login as User
+                {oauthLoading === "facebook" ? (
+                  <Spinner size="sm" className="text-accent" />
+                ) : (
+                  <FaFacebook className="text-[#1877F2]" />
+                )}
+                Facebook
               </button>
             </div>
+            {!oauthConfigured && (
+              <p className="text-center text-[11px] text-ink-mute">
+                Social sign-in activates once the providers are configured in
+                Supabase.
+              </p>
+            )}
           </div>
 
           <div className="pt-4 text-center">

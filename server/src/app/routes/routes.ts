@@ -40,6 +40,9 @@ router.post(
   validateRequest(UserSchema.userLoginSchema),
   authController.login
 );
+
+// social sign-in (Google / Facebook via Supabase Auth)
+router.post("/auth/oauth", authController.oauthLogin);
 ///////////////////////////////////////////////////profile //////////////////////////////////////////////
 // change password
 router.post(

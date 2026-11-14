@@ -24,6 +24,25 @@ const login = async (req: Request, res: Response) => {
     });
   }
 };
+const oauthLogin = async (req: Request, res: Response) => {
+  try {
+    const { accessToken } = req.body;
+    const result = await authServices.oauthLogin(accessToken);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Social sign-in successful",
+      data: result,
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      statusCode: error?.statusCode || StatusCodes.BAD_REQUEST,
+      success: false,
+      message: error?.message || "Social sign-in failed",
+      data: null,
+    });
+  }
+};
 const newPasswords = async (req: Request, res: Response) => {
   try {
     const passwordData = req.body;
@@ -88,6 +107,7 @@ const changeUsername = async (req: Request, res: Response) => {
 
 export const authController={
     login,
+    oauthLogin,
     newPasswords,
     changeEmail,
     changeUsername

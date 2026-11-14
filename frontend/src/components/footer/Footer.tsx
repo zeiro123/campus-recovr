@@ -94,7 +94,7 @@ const Footers = () => {
           </span>
           <div className="flex items-center gap-2">
             <a
-              href="https://github.com/alamin147"
+              href="https://github.com/zeiro123"
               target="_blank"
               rel="noopener noreferrer"
               className="grid h-9 w-9 place-items-center rounded-lg text-ink-dim transition hover:bg-white/5 hover:text-ink"
@@ -103,7 +103,7 @@ const Footers = () => {
               <FaGithub size={18} />
             </a>
             <a
-              href="https://www.linkedin.com/in/alamin-developer/"
+              href="https://www.linkedin.com/in/your-linkedin-handle"
               target="_blank"
               rel="noopener noreferrer"
               className="grid h-9 w-9 place-items-center rounded-lg text-ink-dim transition hover:bg-white/5 hover:text-ink"

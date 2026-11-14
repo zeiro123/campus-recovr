@@ -144,6 +144,17 @@ Campus_RecovR/
 
 ---
 
+## 👤 About the Author
+
+**Testimony Chimberengwa** — cybersecurity enthusiast, Computer Engineering student at the **University of Zimbabwe**, and intern at **Econet Wireless**. I build side projects and hunt bugs on HackerOne.
+
+- GitHub: [@zeiro123](https://github.com/zeiro123)
+- This project: [Campus RecovR](https://github.com/zeiro123/campus-recovr) — a free lost & found platform for UZ students, built so nobody has to pay $20 to replace a lost student ID again.
+
+Other work lives on [my GitHub](https://github.com/zeiro123?tab=repositories) — chess software, an API attack-detection lab, and more.
+
+---
+
 ## 📜 Credits & License
 
 Original project: [alamin147/lost-and-found](https://github.com/alamin147/lost-and-found) (ISC). This fork: Campus RecovR for UZ.
