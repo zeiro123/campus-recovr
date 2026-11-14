@@ -61,10 +61,10 @@ export function Navbars() {
           </span>
           <span className="hidden sm:block leading-tight">
             <span className="block text-[15px] font-extrabold tracking-tight text-ink">
-              Lost &amp; Found
+              Campus RecovR
             </span>
             <span className="block text-[11px] font-medium text-ink-mute">
-              Find what matters
+              Lost &amp; Found for UZ
             </span>
           </span>
         </Link>

@@ -36,3 +36,7 @@ frontend/dist
 frontend/.env
 frontend/.vercel
 server/.env.bak*
+
+# Local PostgreSQL cluster + start log
+.pgdata
+pg-start.log

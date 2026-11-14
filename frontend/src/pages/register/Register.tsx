@@ -72,7 +72,7 @@ const Register = () => {
         <div className="mb-8 space-y-2 text-center">
           <h1 className="text-2xl font-bold text-ink">Create Account</h1>
           <p className="text-sm text-ink-dim">
-            Join our lost and found community
+            Join the UZ lost and found community
           </p>
         </div>
 

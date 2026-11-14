@@ -149,7 +149,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </span>
               <div className="leading-tight">
                 <h1 className="text-[15px] font-extrabold tracking-tight text-ink">
-                  Lost &amp; Found
+                  Campus RecovR
                 </h1>
                 <p className="text-[11px] font-medium text-ink-mute">
                   Dashboard

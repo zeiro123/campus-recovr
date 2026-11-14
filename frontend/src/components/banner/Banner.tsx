@@ -14,10 +14,10 @@ const Banner = () => {
   const slides = [
     {
       badge: "Lost something? Report here!",
-      title: "Welcome to Lost and Found Management",
-      highlight: "Lost and Found",
+      title: "Welcome to Campus RecovR",
+      highlight: "Campus RecovR",
       description:
-        "Lost and Found Management is your reliable partner in handling lost items. Whether you've misplaced your belongings or found something left behind, we're here to assist with our modern, efficient system.",
+        "Campus RecovR is your reliable partner in handling lost items at the University of Zimbabwe. Whether you've misplaced your student ID, phone or laptop — or found something left behind — we're here to help you reunite with what matters.",
       primaryButton: {
         text: "Report a Lost Item",
         href: "/reportlostItem",

@@ -1,386 +1,125 @@
-# 📌 Lost & Found Management System
+# 🎓 Campus RecovR — Lost & Found for the University of Zimbabwe
 
-A modern, comprehensive lost and found management platform built with React, TypeScript, and Node.js. The system enables users to report lost items, register found items, make claims, and efficiently reunite people with their belongings.
+A free, community-run lost & found platform for UZ students. Lost your student ID (again — and a replacement costs $20?), your phone, or your laptop? Report it in seconds, search what others found, claim matches, and leave a testimonial. No PII required — just an email and a username.
 
----
-
-## 📖 Description
-
-Lost & Found Management System is a full-stack web application designed to streamline the process of reporting, tracking, and claiming lost items. Users can report lost belongings, register found items, and make claims through an intuitive interface. The platform features role-based access control, real-time search capabilities, advanced filtering, and comprehensive admin management tools.
-
-This project demonstrates a complete implementation of a community service platform with user authentication, item management, claim processing, and administrative oversight capabilities.
+**Forked from [alamin147/lost-and-found](https://github.com/alamin147/lost-and-found)** — rebranded and set up for local development with a self-contained PostgreSQL cluster.
 
 ---
 
-## 🌐 Live URL
+## ✨ Features
 
-[Lost & Found Frontend](https://lost-and-found-rust.vercel.app)
-
-[Lost & Found Backend](https://lost-and-found-backend-lf.vercel.app)
-
----
-
-## 🚀 Features
-
-- ✅ User authentication (register/login) with JWT-based security
-- 🔒 Role-based access control (User/Admin)
-- 📝 Lost item reporting with detailed descriptions and images
-- 🔍 Found item registration with location and date tracking
-- 💬 Claim system for matching lost and found items
-- ⭐ Advanced search and filtering capabilities
-- 🤖 AI-powered search using Google Gemini API for intelligent item matching
-- 📊 Admin dashboard with comprehensive analytics
-- 👥 User management and role assignment
-- 📂 Category management for item organization
-- 📱 Responsive design for mobile and desktop
-- 🔐 Secure password management and account settings
-- 📈 Real-time statistics and activity tracking
-- 🏷️ Item categorization system
-- 📍 Location-based item tracking
-- 📅 Filtering and sorting
-- 🔔 Status tracking for claims and items
-- 🛡️ Soft delete functionality for data integrity
-- 📊 Dashboard analytics for users and admins
-- 🎨 Modern, intuitive user interface
+- 🔐 Email + password accounts with usernames (no PII) — JWT auth, bcrypt hashing
+- 📝 Report lost items (title, description, category, location, date, image)
+- 🎒 Register found items you picked up on campus
+- 🔍 Search + filter both listings (name, location, description; sort options)
+- 🤝 Claim system for matching lost ↔ found items, with status tracking
+- 🤖 AI-powered search (Google Gemini) with automatic fallback to keyword search
+- 📊 User dashboard (my items, my claims) + admin dashboard (users, claims, categories, stats)
+- ⭐ Testimonials / reviews page
+- 📱 Responsive dark UI
 
 ---
 
 ## 🧑‍💻 Tech Stack
 
-**Frontend:**
-- React
-- TypeScript
-- Tailwind CSS
-- Flowbite React
-- Redux Toolkit
-- React Hook Form
-- React Router DOM
-- React Icons
-- React Star Ratings
-- React Toastify
-
-
-
-**Backend:**
-- Node.js
-- Express.js
-- TypeScript
-- Prisma ORM
-- PostgreSQL
-
-**AI & Machine Learning:**
-- Google Gemini API
-- Natural language processing
-- Intelligent item matching
-
-**Authentication & Security:**
-- JWT (JSON Web Tokens)
-- Bcrypt (password hashing)
-- CORS (Cross-Origin Resource Sharing)
-
-**Development Tools:**
-- ESLint
-- PostCSS
-- Autoprefixer
-- ts-node-dev
-- Prisma Studio
+| Layer | Tech |
+|-------|------|
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Flowbite React, Redux Toolkit, React Router |
+| Backend | Node.js, Express, TypeScript, Prisma ORM |
+| Database | PostgreSQL (local cluster now → **Supabase later**, see below) |
+| Auth | JWT + bcrypt |
 
 ---
 
-## 👥 User Roles
+## 🚀 Local Setup (this machine)
 
-- 👤 **User:** Can register, login, report lost items, register found items, make claims, view item histories, and manage personal profile
-- 👨‍💻 **Admin:** Can manage all users, moderate content, view comprehensive analytics, manage categories, process claims, and handle all administrative functions
+### 1. Database — self-contained local PostgreSQL cluster
 
----
+The DB is **not** the system Postgres service and **not** Docker — it's a project-local cluster in `.pgdata/` built from the PostgreSQL 18 binaries already installed, on **port 5435** (the system service on 5432, Black Heron on 5433 and Loopback on 5434 are untouched).
 
-
-## 🛠️ Installation & Usage (Local)
-
-> 💡 The database is a **cloud PostgreSQL (Neon)** instance — no local database or Docker is required.
-
-### Prerequisites
-- Node.js 18+
-
-### 1. Configure the database
-
-Copy the project's connection string from Neon (or any PostgreSQL host) into `server/.env`:
+> ⚠️ **Why the cluster must start via `server/pg.mjs`**: the postmaster is launched with a **minimal environment** on purpose. When Postgres is started from an agent/Hermes shell, its large env block is inherited by postgres child processes, which crash with `0xC0000142` (STATUS_DLL_INIT_FAILED) on Windows. `pg.mjs` sanitizes the env and redirects start output to a file.
 
 ```bash
-DATABASE_URL="postgresql://user:password@ep-xxx.aws.neon.tech/lost_and_found?sslmode=require"
+cd server
+node pg.mjs start    # start the cluster (also: stop | status)
 ```
 
-Then apply migrations and seed data:
+`server/.env` (already configured, gitignored):
 
-```bash
-cd lost-and-found/server
-npm run migrate:deploy   # apply database migrations
-npm run seed             # seed categories, admin & demo users, sample items
+```env
+PORT=5001
+NODE_ENV=development
+DATABASE_URL="postgresql://postgres@localhost:5435/campus_recover?schema=public"
+JWT_SECRETS=<secret>
+JWT_EXPIRES_IN=7d
+BCRYPT_SALTROUNDS=12
+CLIENT_URL=http://localhost:5173
 ```
 
 ### 2. Backend
 
 ```bash
-cd lost-and-found/server
-npm install
-npm start                # starts the API on http://localhost:5000
+cd server
+npm install          # runs prisma generate via postinstall
+npx prisma db push   # create tables (migrations are gitignored in the upstream repo)
+npm run seed         # admin/demo users, categories, sample items
+npm start            # API on http://localhost:5001
 ```
 
 ### 3. Frontend
 
 ```bash
-cd lost-and-found/frontend
-npm install
-
-# .env:
-#   VITE_SERVER_URL=http://localhost:5000
-
-npm run dev
+cd frontend
+npm install          # frontend/.env already sets VITE_SERVER_URL=http://localhost:5001
+npm run dev          # app on http://localhost:5173
 ```
-
-Open `http://localhost:5173` in your browser.
 
 ### 👤 Seeded accounts
 
-| Role  | Username | Password  |
-|-------|----------|-----------|
-| Admin | `admin`  | `admin123` |
-| User  | `demo`   | `demo1234` |
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | `admin` | `admin123` |
+| User | `demo` | `demo1234` |
 
-> ✅ **AI search:** Powered by Google's new **Interactions API** (`POST /v1beta/interactions` — the old `generateContent` API is retired for new projects). Configured via `GEMINI_API_KEY` and `GEMINI_MODEL` (default `gemini-3.5-flash`) in `server/.env`. If the API is unreachable, rate-limited, or the key is invalid, search automatically falls back to built-in keyword search.
-
+**Quick reboot routine:** `cd server && node pg.mjs start`, then `npm start` in `server/` and `npm run dev` in `frontend/`.
 
 ---
 
-## 🗂️ Project Structure
+## ☁️ Supabase later
+
+Prisma makes the swap a one-liner: change `DATABASE_URL` in `server/.env` to the Supabase connection string (`postgresql://postgres:<pw>@db.<ref>.supabase.co:5432/postgres`), run `npx prisma db push` against it, done — no code changes. (For Supabase poolers use port `6543` + `?pgbouncer=true`.)
+
+---
+
+## 🗺️ API quick reference
+
+| Route | Purpose |
+|-------|---------|
+| `POST /api/register` / `POST /api/login` | Accounts (login body: `{ username, password }` — username field accepts email too) |
+| `GET /api/found-items` · `GET /api/lostItem` | Public listings with filtering |
+| `POST /api/lostItem` · `POST /api/found-items` | Report items (auth) |
+| `GET /api/my/lostItem` · `GET /api/my/foundItem` · `GET /api/my/claims` | Own items/claims (auth) |
+| `POST /api/claims` | Claim a found item (auth) |
+| `GET /api/item-categories` | Categories |
+| `POST /api/ai-search` | AI search (falls back to keywords without a key) |
+
+> 🔑 **Auth quirk (upstream behavior):** the API expects the raw JWT in the `Authorization` header — **no `Bearer` prefix**.
+
+> 📅 **Date format:** item dates must be full ISO-8601 (`2026-11-13T12:00:00.000Z`).
+
+---
+
+## 🗂️ Structure
 
 ```
-lost-and-found/
-├── frontend/                # React frontend
-│   ├── src/
-│   │   ├── components/      # UI components
-│   │   │   ├── banner/      # Homepage banner
-│   │   │   ├── navbar/      # Navigation bar
-│   │   │   ├── footer/      # Footer component
-│   │   │   ├── modal/       # Modal components
-│   │   │   └── recentItem/  # Recent items display
-│   │   ├── pages/           # Page components
-│   │   │   ├── home/        # Homepage
-│   │   │   ├── login/       # Login page
-│   │   │   ├── register/    # Registration page
-│   │   │   ├── foundItems/  # Found items listing
-│   │   │   ├── lostItems/   # Lost items listing
-│   │   │   ├── aiSearch/    # AI-powered search page
-│   │   │   └── reportFoundItem/ # Report found item
-│   │   ├── dashboard/       # Dashboard components
-│   │   │   ├── pages/       # Dashboard pages
-│   │   │   ├── myFoundItems/ # User's found items
-│   │   │   └── myLostItems/ # User's lost items
-│   │   ├── redux/           # Redux store and API
-│   │   ├── auth/            # Authentication utilities
-│   │   └── types/           # TypeScript type definitions
-│   └── ...
-├── server/                  # Express backend
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── modules/     # Feature modules
-│   │   │   │   ├── user/    # User management
-│   │   │   │   ├── foundItems/ # Found items
-│   │   │   │   ├── lostItem/ # Lost items
-│   │   │   │   ├── aiSearch/ # AI search functionality
-│   │   │   │   └── claim/   # Claims management
-│   │   │   ├── auth/        # Authentication
-│   │   │   ├── middlewares/ # Custom middlewares
-│   │   │   ├── routes/      # API routes
-│   │   │   └── utils/       # Utility functions
-│   │   └── server.ts        # Entry point
-│   ├── prisma/              # Database schema and migrations
-│   └── ...
-├── README.md
-└── ...
+Campus_RecovR/
+├── frontend/           # React + Vite app (src/pages, src/dashboard, src/components, src/redux)
+├── server/             # Express API (src/app/modules, prisma/schema.prisma, pg.mjs)
+└── .pgdata/            # local PostgreSQL cluster (gitignored)
 ```
 
 ---
 
-## 🔐 Environment Variables
+## 📜 Credits & License
 
-Create a `.env` file in the `server` directory and add the following:
-
-```
-DATABASE_URL=
-JWT_SECRET=
-CLIENT_URL=
-NODE_ENV=
-GEMINI_API_KEY=               # Google Gemini API key for AI search
-```
-
-For the frontend, create a `.env` file with:
-```
-VITE_SERVER_URL=
-VITE_NODE_ENV=
-```
-
----
-
-## 📊 API Documentation
-
-### Authentication Routes
-```http
-POST /api/register              - Register a new user
-POST /api/login                 - Login user and get token
-POST /api/change-password       - Change user password (with authentication)
-POST /api/change-email          - Change user email (with authentication)
-POST /api/change-username       - Change username (with authentication)
-```
-
-### User Management Routes
-```http
-GET /api/users                  - Get all users
-PUT /api/block/user/:id         - Block/unblock user (admin only)
-PUT /api/change-role/:id        - Change user role (admin only)
-DELETE /api/delete-user/:id     - Soft delete user (admin only)
-```
-
-### Item Category Routes
-```http
-GET /api/item-categories        - Get all item categories
-POST /api/item-categories       - Create new category (with authentication)
-PUT /api/item-categories/:id    - Update category (with authentication)
-DELETE /api/item-categories/:id - Delete category (with authentication)
-```
-
-### Found Items Routes
-```http
-GET /api/found-items            - Get all found items with filtering
-POST /api/found-items           - Create new found item (with authentication)
-GET /api/found-item/:id         - Get single found item details
-GET /api/my/foundItem           - Get user's found items (with authentication)
-PUT /api/my/foundItem           - Update user's found item (with authentication)
-DELETE /api/my/foundItem/:id    - Delete user's found item (with authentication)
-```
-
-### Lost Items Routes
-```http
-GET /api/lostItem               - Get all lost items with filtering
-POST /api/lostItem              - Create new lost item (with authentication)
-GET /api/lostItem/:id           - Get single lost item details
-GET /api/my/lostItem            - Get user's lost items (with authentication)
-PUT /api/my/lostItem            - Update user's lost item (with authentication)
-DELETE /api/my/lostItem/:id     - Delete user's lost item (with authentication)
-PUT /api/found-lost             - Mark lost item as found (with authentication)
-```
-
-### Claims Management Routes
-```http
-GET /api/claims                 - Get all claims (admin only)
-POST /api/claims                - Create new claim (with authentication)
-GET /api/my/claims              - Get user's claims (with authentication)
-PUT /api/claims/:claimId        - Update claim status (with authentication)
-```
-
-### Dashboard & Statistics
-```http
-GET /api/admin/stats            - Get admin dashboard statistics (admin only)
-GET /api/recent-activity        - Get recent activity feed for the dashboard (with authentication)
-```
-
-### AI Search
-```http
-POST /api/ai-search             - AI-powered search for lost and found items
-```
-
----
-
-## 🏗️ Database Schema
-
-The application uses PostgreSQL with Prisma ORM. Key models include:
-
-- **User**: User accounts with role-based access
-- **ItemCategory**: Categories for organizing items
-- **FoundItem**: Items that have been found
-- **LostItem**: Items that have been reported as lost
-- **Claim**: Claims made by users for found items
-
-All models include soft delete functionality and proper timestamp tracking.
-
----
-
-## 🎯 Key Features Detail
-
-### User Authentication
-- JWT-based authentication system
-- Role-based access control (User/Admin)
-- Secure password hashing with bcrypt
-- Password change and account management
-
-### Item Management
-- Report lost items with detailed descriptions
-- Register found items with location data
-- Advanced search and filtering capabilities
-- Category-based organization
-- Image support for item identification
-
-### Claims System
-- Users can claim found items
-- Detailed claim forms with verification
-- Status tracking (Pending/Approved/Rejected)
-- Admin moderation capabilities
-
-### AI-Powered Search
-- Intelligent search using Google Gemini API
-- Natural language query processing
-- Context-aware item matching
-- Searches across both lost and found items simultaneously
-- AI reasoning and explanation for search results
-- Fallback to traditional text search if AI is unavailable
-- Enhanced user experience with modern dark theme interface
-
-### Admin Dashboard
-- Comprehensive user management
-- Item moderation and oversight
-- Claims processing and approval
-- System statistics and analytics
-- Category management
-
-### User Dashboard
-- Personal item tracking
-- Claim request management
-- Account settings and preferences
-- Activity history and statistics
-
----
-
-## 🛡️ Security Features
-
-- JWT token-based authentication
-- Role-based route protection
-- Password hashing with bcrypt
-- Input validation and sanitization
-- CORS configuration for API security
-- Soft delete for data integrity
-
----
-
-## 📱 Responsive Design
-
-The application is fully responsive and optimized for:
-- Desktop computers
-- Tablets
-- Mobile devices
-
----
-
-
-## 🚀 Deployment
-
-The application can be deployed on various platforms:
-- **Frontend**: Vercel hosting service
-- **Backend**: Vercel hosting service
-- **Database**: PostgreSQL on Neon
-
-> ⚠️ **Backend deploys:** `server/vercel.json` uses the legacy `builds` config, so Vercel does **not** run the build step itself — it ships your local `dist/` as-is. Always deploy with:
-> ```bash
-> cd server
-> npm run deploy    # = npm run build && vercel --prod
-> ```
-> The frontend (Vite) builds automatically on Vercel — a plain `vercel --prod` inside `frontend/` is enough.
+Original project: [alamin147/lost-and-found](https://github.com/alamin147/lost-and-found) (ISC). This fork: Campus RecovR for UZ.

@@ -11,7 +11,7 @@ const AboutUs = () => {
           </span>
           <h2 className="section-title">About Us</h2>
           <p className="section-sub">
-            Don't let lost items remain lost. Lost and Found Management bridges
+            Don't let lost items remain lost. Campus RecovR bridges
             the gap between lost and found, reuniting you with what matters
             most.
           </p>
