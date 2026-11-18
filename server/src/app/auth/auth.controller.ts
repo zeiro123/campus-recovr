@@ -35,10 +35,15 @@ const oauthLogin = async (req: Request, res: Response) => {
       data: result,
     });
   } catch (error: any) {
+    // Known app errors carry a statusCode — surface their message. Anything
+    // else (raw Prisma dumps etc.) stays generic, never a stack trace.
+    const known = Boolean(error?.statusCode);
     sendResponse(res, {
       statusCode: error?.statusCode || StatusCodes.BAD_REQUEST,
       success: false,
-      message: error?.message || "Social sign-in failed",
+      message: known
+        ? error?.message || "Social sign-in failed"
+        : "Social sign-in failed — please try again, or use email and password.",
       data: null,
     });
   }

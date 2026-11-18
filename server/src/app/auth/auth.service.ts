@@ -174,31 +174,52 @@ const oauthLogin = async (accessToken: string, provider = "google") => {
     profile.user_metadata?.full_name || profile.user_metadata?.name || "";
   const avatarUrl = profile.user_metadata?.avatar_url || "";
 
-  let user = await prisma.user.findFirst({ where: { email } });
+  // Case-insensitive lookup — emails can arrive with different casing.
+  let user = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+  });
   if (!user) {
     // New social user — derive a unique username from the email.
     const base =
       profile.user_metadata?.user_name ||
       email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "") ||
       "user";
+    const randomSuffix = () => crypto.randomBytes(3).toString("hex");
     let username = base.slice(0, 20);
-    let suffix = 0;
-    while (await prisma.user.findFirst({ where: { username } })) {
-      suffix += 1;
-      username = `${base.slice(0, 16)}${suffix}`.slice(0, 20);
+    // Create with collision retries: a username clash appends a random
+    // suffix instead of surfacing a raw Prisma error.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const randomLocalPassword = crypto.randomBytes(24).toString("hex");
+        user = await prisma.user.create({
+          data: {
+            username,
+            email,
+            password: await utils.passwordHash(randomLocalPassword),
+            userImg: avatarUrl,
+            name: fullName,
+            provider,
+          },
+        });
+        break;
+      } catch (err: any) {
+        // P2002 = unique constraint; retry with a randomised handle.
+        if (String(err?.code) === "P2002" && attempt < 3) {
+          username = `${base.slice(0, 12)}-${randomSuffix()}`.slice(0, 20);
+          continue;
+        }
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "We couldn't create your account — please try again."
+        );
+      }
     }
-    // Random local password — social users never use it.
-    const randomPassword = crypto.randomBytes(24).toString("hex");
-    user = await prisma.user.create({
-      data: {
-        username,
-        email,
-        password: await utils.passwordHash(randomPassword),
-        userImg: avatarUrl,
-        name: fullName,
-        provider,
-      },
-    });
+    if (!user) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "We couldn't create your account — please try again."
+      );
+    }
   }
 
   const { id, name, role, userImg, username } = user;

@@ -81,9 +81,9 @@ const Footers = () => {
               About The Project
             </h2>
             <p className="text-sm leading-relaxed text-ink-mute">
-              A full-stack demo built with React, Node.js, Prisma &amp;
-              PostgreSQL. Report items, file claims, and let AI-powered search
-              find what matters.
+              An open-source, free service built to help Campus students save
+              money on lost items — report what you lost, hand in what you
+              found, and let the community do the rest.
             </p>
           </div>
         </div>
