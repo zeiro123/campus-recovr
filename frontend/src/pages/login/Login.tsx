@@ -164,6 +164,12 @@ const Login = () => {
             </button>
           )}
 
+          <div className="text-right">
+            <Link to="/forgot-password" className="link-accent text-sm">
+              Forgot password?
+            </Link>
+          </div>
+
           {/* Social sign-in */}
           <div className="space-y-3">
             <div className="flex items-center">

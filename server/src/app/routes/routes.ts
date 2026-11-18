@@ -8,6 +8,7 @@ import { claimsController } from "../modules/claim/claim.controller";
 import { blocksController } from "../blocks/blocks.controller";
 import { notificationsController } from "../notifications/notifications.controller";
 import validateRequest from "../midddlewares/validate";
+import { authLimiter } from "../midddlewares/rateLimit";
 import { UserSchema } from "../modules/user/user.validate";
 import { FoundItemCategorySchema } from "../modules/itemCategory/itemCategory.validate";
 import { FoundItemSchema } from "../modules/foundItems/foundItems.validate";
@@ -26,6 +27,7 @@ const router = express.Router();
 // user registraion
 router.post(
   "/register",
+  authLimiter,
   userController.registerUser
 );
 
@@ -39,12 +41,13 @@ router.get(
 // user login
 router.post(
   "/login",
+  authLimiter,
   validateRequest(UserSchema.userLoginSchema),
   authController.login
 );
 
 // social sign-in (Google / Facebook via Supabase Auth)
-router.post("/auth/oauth", authController.oauthLogin);
+router.post("/auth/oauth", authLimiter, authController.oauthLogin);
 ///////////////////////////////////////////////////profile //////////////////////////////////////////////
 // change password
 router.post(
@@ -149,6 +152,12 @@ router.get("/blocks", auth(), blocksController.getBlockedUsers);
 router.get("/my/notifications", auth(), notificationsController.getMyNotifications);
 router.put("/notifications/:id/read", auth(), notificationsController.markRead);
 router.put("/notifications/read-all", auth(), notificationsController.markAllRead);
+
+// ── password reset + email verification (public token flows) ──────────
+router.post("/forgot-password", authLimiter, authController.forgotPassword);
+router.post("/reset-password", authLimiter, authController.resetPassword);
+router.post("/verify-email", authController.verifyEmail);
+router.post("/verify-email/resend", auth(), authController.sendVerificationEmail);
 
 ///////////////////////////////////////////////////lost item//////////////////////////////////////////////
 

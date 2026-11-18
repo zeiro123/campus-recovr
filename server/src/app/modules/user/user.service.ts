@@ -23,6 +23,7 @@ const registerUser = async (user: User) => {
         email: user.email,
         password: hashedPassword,
         userImg: user.userImg,
+        emailVerified: false, // verified via the emailed link
       },
     });
 

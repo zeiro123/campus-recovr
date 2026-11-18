@@ -22,6 +22,7 @@ name   String @default("")
   userImg   String      @default("")
   phone     String      @default("")
   provider  String      @default("local")
+  emailVerified Boolean @default(true)
   isDeleted Boolean     @default(false)
   deletedAt DateTime?
   // profile   UserProfile?

@@ -28,6 +28,9 @@ import AiSearch from "./pages/aiSearch/AiSearch.tsx";
 import Messages from "./pages/messages/Messages.tsx";
 import Notifications from "./pages/notifications/Notifications.tsx";
 import OAuthCallback from "./pages/auth/OAuthCallback.tsx";
+import ForgotPassword from "./pages/auth/ForgotPassword.tsx";
+import ResetPassword from "./pages/auth/ResetPassword.tsx";
+import VerifyEmail from "./pages/auth/VerifyEmail.tsx";
 import NotFound from "./pages/notFound/NotFound.tsx";
 import { RequireAuth, RequireAdmin } from "./components/guards/ProtectedRoute.tsx";
 
@@ -103,6 +106,18 @@ const router = createBrowserRouter([
       {
         path: "/oauth/callback",
         element: <OAuthCallback />,
+      },
+      {
+        path: "/forgot-password",
+        element: <ForgotPassword />,
+      },
+      {
+        path: "/reset-password",
+        element: <ResetPassword />,
+      },
+      {
+        path: "/verify-email",
+        element: <VerifyEmail />,
       },
       {
         path: "*",

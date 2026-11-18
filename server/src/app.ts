@@ -4,15 +4,23 @@ import dotenv from "dotenv";
 import path from "path";
 import router from "./app/routes/routes";
 import errorHandler from "./app/midddlewares/errorHandler";
+import { apiLimiter } from "./app/midddlewares/rateLimit";
 import { UPLOAD_DIR } from "./app/upload/upload.controller";
 
 dotenv.config();
 
 const app: Application = express();
 
+// Allowed origins: the dev frontend plus the configured production URL.
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.CLIENT_URL,
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: ["http://localhost:5173", `${process.env.CLIENT_URL}`],
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
@@ -25,7 +33,7 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/uploads", express.static(UPLOAD_DIR));
-app.use("/api", router);
+app.use("/api", apiLimiter, router);
 app.use(errorHandler);
 
 app.use((req: Request, res: Response) => {

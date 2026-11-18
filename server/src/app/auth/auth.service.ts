@@ -2,8 +2,11 @@ import { utils } from "../utils/utils";
 import AppError from "../global/error";
 import { StatusCodes } from "http-status-codes";
 import { JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import prisma from "../config/prisma";
+import config from "../config/config";
 import crypto from "crypto";
+import { sendEmail, emailHtml } from "../utils/email";
 
 const loginUser = async (data: any) => {
   const { password, username: userNameEmail } = data;
@@ -221,10 +224,155 @@ const oauthLogin = async (accessToken: string, provider = "google") => {
   };
 };
 
+// ── Password reset (email token, 30 min) ────────────────────────────────
+const RESET_TOKEN_TTL = "30m";
+
+const createPurposeToken = (id: string, purpose: string) =>
+  jwt.sign({ id, purpose }, (config.jwt_secrets as string) + purpose, {
+    expiresIn: RESET_TOKEN_TTL,
+  });
+
+const verifyPurposeToken = (token: string, purpose: string) => {
+  const payload = jwt.verify(token, (config.jwt_secrets as string) + purpose) as {
+    id?: string;
+  };
+  if (!payload?.id) throw new AppError(StatusCodes.UNAUTHORIZED, "Invalid token");
+  return payload.id as string;
+};
+
+const forgotPassword = async (email: string) => {
+  const user = await prisma.user.findFirst({
+    where: { email, isDeleted: false },
+  });
+  // Never reveal whether the email exists — same response either way.
+  if (!user) {
+    return {
+      message: "If that email exists, a reset link has been sent.",
+      delivered: false,
+      resetLink: undefined as string | undefined,
+    };
+  }
+  if (user.provider && user.provider !== "local") {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "This account uses social sign-in — reset the password from Google instead."
+    );
+  }
+
+  const token = createPurposeToken(user.id, "reset");
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const resetLink = `${clientUrl}/reset-password?token=${token}`;
+
+  const result = await sendEmail(
+    user.email,
+    "Reset your Campus RecovR password",
+    emailHtml(
+      "Password reset",
+      "You asked to reset your password. This link expires in 30 minutes. If you didn't request it, you can safely ignore this email.",
+      "Reset password",
+      resetLink
+    )
+  );
+
+  const isDev = process.env.NODE_ENV !== "production";
+  return {
+    message: result.delivered
+      ? "Reset link sent — check your email."
+      : "Email service isn't configured — use the link below (QA mode).",
+    delivered: result.delivered,
+    // Only ever exposed outside production so QA can complete the flow.
+    resetLink: isDev && !result.delivered ? resetLink : undefined,
+  };
+};
+
+const resetPassword = async (token: string, newPassword: string) => {
+  if (!newPassword || newPassword.length < 8) {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "Password must be at least 8 characters"
+    );
+  }
+  let userId: string;
+  try {
+    userId = verifyPurposeToken(token, "reset");
+  } catch {
+    throw new AppError(
+      StatusCodes.UNAUTHORIZED,
+      "Reset link is invalid or has expired — request a new one."
+    );
+  }
+  const user = await prisma.user.findFirst({ where: { id: userId } });
+  if (!user) throw new AppError(StatusCodes.UNAUTHORIZED, "User not found");
+  if (user.provider && user.provider !== "local") {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "This account uses social sign-in — reset the password from Google instead."
+    );
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: await utils.passwordHash(newPassword) },
+  });
+  return { message: "Password reset — you can sign in now." };
+};
+
+// ── Email verification ──────────────────────────────────────────────────
+const sendVerificationEmail = async (userId: string) => {
+  const user = await prisma.user.findFirst({ where: { id: userId } });
+  if (!user) throw new AppError(StatusCodes.UNAUTHORIZED, "User not found");
+  if (user.emailVerified) {
+    return { message: "Email is already verified.", alreadyVerified: true };
+  }
+  const token = createPurposeToken(user.id, "verify");
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const verifyLink = `${clientUrl}/verify-email?token=${token}`;
+
+  const result = await sendEmail(
+    user.email,
+    "Verify your Campus RecovR email",
+    emailHtml(
+      "Verify your email",
+      "Confirm your email address to finish setting up your Campus RecovR account.",
+      "Verify email",
+      verifyLink
+    )
+  );
+
+  const isDev = process.env.NODE_ENV !== "production";
+  return {
+    message: result.delivered
+      ? "Verification email sent — check your inbox."
+      : "Email service isn't configured — use the link below (QA mode).",
+    delivered: result.delivered,
+    verifyLink: isDev && !result.delivered ? verifyLink : undefined,
+  };
+};
+
+const verifyEmail = async (token: string) => {
+  let userId: string;
+  try {
+    userId = verifyPurposeToken(token, "verify");
+  } catch {
+    throw new AppError(
+      StatusCodes.UNAUTHORIZED,
+      "Verification link is invalid or has expired — request a new one."
+    );
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: { emailVerified: true },
+  });
+  return { message: "Email verified — thanks!" };
+};
+
 export const authServices = {
   loginUser,
   newPasswords,
   changeEmail,
   changeUsername,
   oauthLogin,
+  forgotPassword,
+  resetPassword,
+  sendVerificationEmail,
+  verifyEmail,
 };

@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import multer from "multer";
 import path from "path";
 import crypto from "crypto";
+import fs from "fs";
 import { existsSync, mkdirSync } from "fs";
 import AppError from "../global/error";
 import { StatusCodes } from "http-status-codes";
@@ -53,7 +54,55 @@ const uploadImage = async (req: Request, res: Response, next: NextFunction) => {
     if (!req.file) {
       throw new AppError(400, "No image file provided");
     }
-    const url = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+
+    // Preferred: Supabase Storage (survives redeploys). The multipart file
+    // lands on local disk first (multer), then is pushed to the bucket.
+    let url = "";
+    const bucket = process.env.SUPABASE_BUCKET;
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+
+    if (bucket && supabaseUrl && publishableKey) {
+      try {
+        const fileBuffer = await fs.promises.readFile(req.file.path);
+        const objectPath = `${Date.now()}-${req.file.filename}`;
+        const up = await fetch(
+          `${supabaseUrl}/storage/v1/object/${bucket}/${objectPath}`,
+          {
+            method: "POST",
+            headers: {
+              apikey: publishableKey,
+              Authorization: `Bearer ${publishableKey}`,
+              "Content-Type": req.file.mimetype,
+              "x-upsert": "true",
+            },
+            body: new Uint8Array(fileBuffer),
+            signal: AbortSignal.timeout(20000),
+          }
+        );
+        if (up.ok) {
+          // Public bucket read needs no auth.
+          url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${objectPath}`;
+          // Local copy no longer needed once in the cloud.
+          fs.promises.unlink(req.file.path).catch(() => {});
+        } else {
+          const errText = await up.text();
+          console.warn(
+            `[upload] Supabase Storage ${up.status}: ${errText.slice(0, 160)} — falling back to local disk`
+          );
+        }
+      } catch (err: any) {
+        console.warn(
+          `[upload] Supabase Storage unreachable (${err?.message || err}) — falling back to local disk`
+        );
+      }
+    }
+
+    // Fallback: local disk (also the dev default when the bucket isn't set).
+    if (!url) {
+      url = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    }
+
     res.status(StatusCodes.CREATED).send({
       success: true,
       statusCode: StatusCodes.CREATED,

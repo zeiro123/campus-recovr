@@ -105,10 +105,103 @@ const changeUsername = async (req: Request, res: Response) => {
 };
 
 
+// ── Password reset + email verification ──────────────────────────────
+const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) throw new Error("An email address is required");
+    const result = await authServices.forgotPassword(email);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: result.message,
+      data: { delivered: result.delivered, resetLink: result.resetLink },
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      statusCode: StatusCodes.BAD_REQUEST,
+      success: false,
+      message: error?.message,
+      data: null,
+    });
+  }
+};
+
+const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      throw new Error("A token and the new password are required");
+    }
+    const result = await authServices.resetPassword(token, newPassword);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: result.message,
+      data: null,
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      statusCode: error?.message?.includes("expired") || error?.message?.includes("invalid")
+        ? StatusCodes.UNAUTHORIZED
+        : StatusCodes.BAD_REQUEST,
+      success: false,
+      message: error?.message,
+      data: null,
+    });
+  }
+};
+
+const sendVerificationEmail = async (req: Request, res: Response) => {
+  try {
+    const result = await authServices.sendVerificationEmail(req.user.id);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: result.message,
+      data: { verifyLink: result.verifyLink, alreadyVerified: result.alreadyVerified },
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      statusCode: StatusCodes.BAD_REQUEST,
+      success: false,
+      message: error?.message,
+      data: null,
+    });
+  }
+};
+
+const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+    if (!token) throw new Error("A verification token is required");
+    const result = await authServices.verifyEmail(token);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: result.message,
+      data: null,
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      statusCode: error?.message?.includes("expired") || error?.message?.includes("invalid")
+        ? StatusCodes.UNAUTHORIZED
+        : StatusCodes.BAD_REQUEST,
+      success: false,
+      message: error?.message,
+      data: null,
+    });
+  }
+};
+
 export const authController={
     login,
     oauthLogin,
     newPasswords,
     changeEmail,
-    changeUsername
+    changeUsername,
+    forgotPassword,
+    resetPassword,
+    sendVerificationEmail,
+    verifyEmail
 }
