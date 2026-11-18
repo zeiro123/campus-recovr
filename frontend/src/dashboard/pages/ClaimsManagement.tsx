@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaEye, FaSearch, FaCheck, FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
+import ItemPhoto from "../../components/item/ItemPhoto";
 import {
   useGetAllClaimsQuery,
   useUpdateClaimStatusMutation,
@@ -312,10 +313,10 @@ const ClaimsManagement = () => {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
-                      <img
-                        src={claim.foundItem?.img || "/bgimg.png"}
+                      <ItemPhoto
+                        src={claim.foundItem?.img}
                         alt={claim.foundItem?.foundItemName}
-                        className="h-12 w-12 rounded-lg border border-line object-cover"
+                        className="h-12 w-12 rounded-lg border border-line"
                       />
                       <div>
                         <div className="font-medium text-ink">
@@ -412,10 +413,10 @@ const ClaimsManagement = () => {
               {selectedClaim && (
                 <div className="mb-6 rounded-xl border border-line bg-surface-2 p-4 text-left">
                   <div className="mb-3 flex items-center space-x-3">
-                    <img
-                      src={selectedClaim.foundItem?.img || "/bgimg.png"}
+                    <ItemPhoto
+                      src={selectedClaim.foundItem?.img}
                       alt={selectedClaim.foundItem?.foundItemName}
-                      className="h-12 w-12 rounded-lg border border-line object-cover"
+                      className="h-12 w-12 rounded-lg border border-line"
                     />
                     <div>
                       <h3 className="font-medium text-ink">

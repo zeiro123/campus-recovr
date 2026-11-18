@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { useGetFoundItemsQuery } from "../../redux/api/api";
 import type { FoundItem } from "../../types/types";
+import ItemPhoto from "../item/ItemPhoto";
 
 const formatDate = (date: string | Date | undefined) => {
   if (!date) return "—";
@@ -66,19 +67,10 @@ const RecentFoundItem = () => {
               return (
                 <div key={item?.id} className="card card-hover overflow-hidden">
                   <div className="relative h-48 w-full border-b border-line bg-surface-2">
-                    <img
-                      className="h-full w-full object-cover"
+                    <ItemPhoto
                       src={item?.img}
                       alt={item?.foundItemName}
-                      width={500}
-                      height={500}
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        if (target.src !== "/bgimg.png") {
-                          target.onerror = null;
-                          target.src = "/bgimg.png";
-                        }
-                      }}
+                      className="h-full w-full"
                     />
                     {item?.isClaimed ? (
                       <span className="badge badge-ok absolute right-3 top-3 backdrop-blur">

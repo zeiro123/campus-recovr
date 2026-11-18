@@ -2,6 +2,7 @@ import { useMyClaimsQuery } from "../../redux/api/api";
 import type { Claim } from "../../types/types";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
+import ItemPhoto from "../../components/item/ItemPhoto";
 import {
   FaSearch,
   FaTimes,
@@ -314,14 +315,10 @@ const MyClaimReqPage = () => {
                         <td className="px-6 py-4 text-sm text-ink-dim">
                           <div className="flex items-center">
                             <div className="mr-4 w-12 flex-shrink-0">
-                              <img
-                                className="h-12 w-12 rounded-lg border border-line object-cover"
+                              <ItemPhoto
                                 src={claim?.foundItem?.img}
                                 alt={claim?.foundItem?.foundItemName}
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src =
-                                    "/bgimg.png";
-                                }}
+                                className="h-12 w-12 rounded-lg border border-line"
                               />
                             </div>
                             <div>

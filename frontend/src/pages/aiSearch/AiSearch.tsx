@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ItemPhoto from "../../components/item/ItemPhoto";
 import {
   FaSearch,
   FaRobot,
@@ -247,13 +248,10 @@ const AiSearch: React.FC = () => {
                     >
                       {item.img && (
                         <div className="relative mb-4">
-                          <img
+                          <ItemPhoto
                             src={item.img}
                             alt={item.foundItemName}
-                            className="h-40 w-full rounded-xl object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/bgimg.png";
-                            }}
+                            className="h-40 w-full rounded-xl"
                           />
                           <div className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-b from-black/55 via-black/10 to-transparent" />
                           {item.isClaimed ? (
@@ -335,13 +333,10 @@ const AiSearch: React.FC = () => {
                     >
                       {item.img && (
                         <div className="relative mb-4">
-                          <img
+                          <ItemPhoto
                             src={item.img}
                             alt={item.lostItemName}
-                            className="h-40 w-full rounded-xl object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/bgimg.png";
-                            }}
+                            className="h-40 w-full rounded-xl"
                           />
                           <div className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-b from-black/55 via-black/10 to-transparent" />
                           <span className="badge badge-danger absolute right-2 top-2">
