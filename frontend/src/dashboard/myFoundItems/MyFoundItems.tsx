@@ -1,4 +1,4 @@
-import { Spinner, Modal, ModalHeader, ModalBody } from "flowbite-react";
+import { Spinner, ModalHeader, ModalBody } from "flowbite-react";
 import {
   useDeleteMyFoundItemMutation,
   useEditMyFoundItemMutation,
@@ -6,6 +6,7 @@ import {
 } from "../../redux/api/api";
 import { useGetClaimsForMyItemsQuery } from "../../redux/api/claimsApi";
 import ClaimsPanel from "../../components/claims/ClaimsPanel";
+import ThemedModal from "../../components/modal/ThemedModal";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toastNotify from "../../components/modal/toastNotify";
@@ -353,7 +354,7 @@ const MyFoundItems = () => {
       </div>
 
       {/* Modal */}
-      <Modal
+      <ThemedModal
         show={isOpen}
         size="md"
         popup={true}
@@ -442,10 +443,10 @@ const MyFoundItems = () => {
             </form>
           </div>
         </ModalBody>
-      </Modal>
+      </ThemedModal>
 
       {/* Delete Confirmation Modal */}
-      <Modal
+      <ThemedModal
         show={isDeleteModalOpen}
         size="md"
         popup={true}
@@ -528,10 +529,10 @@ const MyFoundItems = () => {
             </div>
           </div>
         </ModalBody>
-      </Modal>
+      </ThemedModal>
 
       {/* Claims review panel for one item */}
-      <Modal
+      <ThemedModal
         show={Boolean(claimsFor)}
         size="2xl"
         popup={true}
@@ -549,7 +550,7 @@ const MyFoundItems = () => {
             <ClaimsPanel itemId={claimsFor.id} itemType="found" />
           )}
         </ModalBody>
-      </Modal>
+      </ThemedModal>
     </div>
   );
 };
