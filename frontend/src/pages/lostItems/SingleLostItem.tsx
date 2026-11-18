@@ -252,7 +252,7 @@ const SingleLostItem = () => {
                   {myClaimOnThisItem ? (
                     <div className="flex-1 rounded-xl border border-accent/40 bg-accent/10 p-4 text-center">
                       <p className="flex items-center justify-center gap-2 font-medium text-accent-soft">
-                        <FaHandshake /> Claim sent —{" "}
+                        <FaHandshake /> Return request sent —{" "}
                         {myClaimOnThisItem.status === "PENDING"
                           ? myClaimOnThisItem.viewedAt
                             ? "being reviewed"
@@ -270,7 +270,7 @@ const SingleLostItem = () => {
                       className="btn btn-brand flex-1"
                     >
                       <FaHandshake />
-                      Claim This Item
+                      I Found This Item
                     </button>
                   )}
                   <Link
@@ -289,18 +289,19 @@ const SingleLostItem = () => {
               )}
             </div>
 
-            {/* Claim modal */}
+            {/* Return-request modal (the reverse claim flow) */}
             {isClaimModalOpen && (
               <div className="fixed inset-0 z-[70] grid place-items-center bg-black/70 p-4">
                 <div className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-pop">
                   <div className="mb-4 flex items-start justify-between">
                     <div>
                       <h3 className="flex items-center gap-2 text-lg font-bold text-ink">
-                        <FaHandshake className="text-accent" /> Claim this item
+                        <FaHandshake className="text-accent" /> Return this item
                       </h3>
                       <p className="mt-1 text-sm text-ink-dim">
-                        Tell the reporter how you know this item — they'll be
-                        notified and can approve or reject your claim.
+                        Tell the owner how you know this is their item —
+                        they'll be notified and can approve your return, then
+                        you can arrange handover by chat or WhatsApp.
                       </p>
                     </div>
                     <button
@@ -315,7 +316,7 @@ const SingleLostItem = () => {
                   <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-ink-dim">
-                        When did you find it?
+                        When did you find it? (optional)
                       </label>
                       <input
                         type="date"
@@ -354,7 +355,7 @@ const SingleLostItem = () => {
                         disabled={claimLoading}
                         className="btn btn-brand px-4 py-2 text-sm disabled:opacity-50"
                       >
-                        {claimLoading ? "Sending…" : "Send claim"}
+                        {claimLoading ? "Sending…" : "Send return request"}
                       </button>
                     </div>
                   </form>

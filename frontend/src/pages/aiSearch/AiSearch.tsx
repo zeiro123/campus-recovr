@@ -8,6 +8,7 @@ import {
   FaEye,
   FaMapMarkerAlt,
   FaCalendarAlt,
+  FaInfoCircle,
   FaUser,
   FaTags,
   FaPaperPlane,
@@ -132,6 +133,14 @@ const AiSearch: React.FC = () => {
           <p className="section-sub">
             Harness the power of artificial intelligence to find lost or found
             items. Simply describe what you're looking for in natural language!
+          </p>
+          <p className="mx-auto mt-3 flex max-w-2xl items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.07] px-4 py-2 text-xs leading-relaxed text-amber-300">
+            <FaInfoCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              Heads up: AI search is still work in progress and might not work
+              sometimes — if results look off, try browsing the item lists or
+              searching again.
+            </span>
           </p>
         </header>
 

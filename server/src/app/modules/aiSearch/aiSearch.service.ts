@@ -1,71 +1,96 @@
 import prisma from "../../config/prisma";
 
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/interactions";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  "https://generativelanguage.googleapis.com/v1beta/models";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const CAIMEX_BASE_URL =
+  process.env.CAIMEX_BASE_URL || "https://api.caimex.ai/v1";
+const CAIMEX_MODEL = process.env.CAIMEX_MODEL || "caimex/auto";
 
-// Call the Gemini Interactions API (the old generateContent API is retired
-// for new projects, see https://ai.google.dev/gemini-api/docs/get-started)
-async function generateText(prompt: string, budgetMs = 8000): Promise<string> {
+// Call Gemini (Google AI Studio key) via the standard generateContent API.
+async function generateGemini(prompt: string, budgetMs = 12000): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY || "";
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not set");
   }
 
-  const deadline = Date.now() + budgetMs;
-  let lastError: Error = new Error("Gemini request failed");
-
-  // Up to 2 attempts, but never exceed the overall time budget so the
-  // request fits within the serverless function timeout.
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const remaining = deadline - Date.now();
-    if (remaining < 1500) break;
-
-    const response = await fetch(GEMINI_API_URL, {
+  const response = await fetch(
+    `${GEMINI_API_URL}/${GEMINI_MODEL}:generateContent`,
+    {
       method: "POST",
       headers: {
         "x-goog-api-key": apiKey,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model: GEMINI_MODEL, input: prompt }),
-      signal: AbortSignal.timeout(remaining),
-    }).catch((err) => {
-      throw new Error(`Gemini request error: ${err?.message || err}`);
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      lastError = new Error(
-        `Gemini API error ${response.status}: ${errorText}`
-      );
-      const retryable = response.status === 429 || response.status >= 500;
-      if (retryable && attempt === 0) {
-        console.warn(
-          `Gemini request failed (${response.status}). Retrying once...`
-        );
-        await new Promise((res) => setTimeout(res, 400));
-        continue;
-      }
-      throw lastError;
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+      signal: AbortSignal.timeout(budgetMs),
     }
+  );
 
-    const data = await response.json();
-    // Extract the final text from the interaction's model_output steps
-    const text = (data.steps ?? [])
-      .filter((step: any) => step.type === "model_output")
-      .flatMap((step: any) => step.content ?? [])
-      .filter((part: any) => part.type === "text")
-      .map((part: any) => part.text)
-      .join("")
-      .trim();
-
-    if (!text) {
-      throw new Error("Gemini returned an empty response");
-    }
-    return text;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API error ${response.status}: ${errorText}`);
   }
 
-  throw lastError;
+  const data = await response.json();
+  const text = (data.candidates?.[0]?.content?.parts ?? [])
+    .filter((part: any) => part.type === "text" || typeof part.text === "string")
+    .map((part: any) => part.text)
+    .join("")
+    .trim();
+
+  if (!text) {
+    throw new Error("Gemini returned an empty response");
+  }
+  return text;
+}
+
+// Fallback AI provider: Caimex (OpenAI-compatible chat completions).
+async function generateCaimex(prompt: string, budgetMs = 15000): Promise<string> {
+  const apiKey = process.env.CAIMEX_API_KEY || "";
+  if (!apiKey) {
+    throw new Error("CAIMEX_API_KEY is not set");
+  }
+
+  const response = await fetch(`${CAIMEX_BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: CAIMEX_MODEL,
+      messages: [{ role: "user", content: prompt }],
+    }),
+    signal: AbortSignal.timeout(budgetMs),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Caimex API error ${response.status}: ${errorText}`);
+  }
+
+  const data = await response.json();
+  const text = (data.choices?.[0]?.message?.content ?? "").trim();
+  if (!text) {
+    throw new Error("Caimex returned an empty response");
+  }
+  return text;
+}
+
+// AI text generation with a provider chain: Gemini → Caimex.
+async function generateText(prompt: string): Promise<string> {
+  const errors: string[] = [];
+  for (const provider of [generateGemini, generateCaimex]) {
+    try {
+      return await provider(prompt);
+    } catch (error: any) {
+      errors.push(error?.message || String(error));
+    }
+  }
+  throw new Error(`All AI providers failed: ${errors.join(" | ")}`);
 }
 
 const aiSearchItems = async (searchQuery: string) => {

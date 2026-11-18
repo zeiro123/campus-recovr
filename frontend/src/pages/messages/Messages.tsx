@@ -462,7 +462,7 @@ const ChatThread = ({ chatId }: { chatId: string }) => {
           </button>
         </div>
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
           {threadQuery.isLoading ? (
             <div className="flex h-full items-center justify-center">
               <Spinner size="lg" className="text-accent" />
@@ -666,7 +666,7 @@ const ChatThread = ({ chatId }: { chatId: string }) => {
               ))}
             </div>
           )}
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-2.5">
             <button
               type="button"
               onClick={() => setShowEmojis((v) => !v)}

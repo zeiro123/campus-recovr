@@ -84,8 +84,12 @@ const createClaim = async (item: Claim, user: JwtPayload) => {
   await notify(
     publisherId,
     "claim",
-    `New claim on your ${itemLabel}`,
-    `${user.name || user.username} is claiming this item — review it from your dashboard.`,
+    foundItem
+      ? `New claim on your ${itemLabel}`
+      : `Someone may have your ${itemLabel}`,
+    foundItem
+      ? `${user.name || user.username} is claiming this item — review it from your dashboard.`
+      : `${user.name || user.username} says they found this item and wants to return it — review it from your dashboard.`,
     foundItemId
       ? `/foundItems/${foundItemId}`
       : `/lostItems/${lostItemId}`,
