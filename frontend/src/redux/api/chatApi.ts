@@ -5,12 +5,12 @@ import { baseApi } from "./baseApi";
 
 const chatApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // get-or-create a 1:1 conversation with a user
+    // get-or-create a 1:1 conversation with a user (optional item reference)
     startChat: builder.mutation({
-      query: (userId: string) => ({
+      query: (data: { userId: string; item?: { name?: string; type?: string } }) => ({
         url: "/chats",
         method: "POST",
-        body: { userId },
+        body: data,
       }),
     }),
     // my conversations, newest activity first (last message + unread counts)
@@ -28,16 +28,70 @@ const chatApi = baseApi.injectEndpoints({
       providesTags: (_r, _e, chatId: string) => [{ type: "chats", id: chatId }],
       pollingInterval: 3000,
     }),
+    // send a message (text and/or chat media)
     sendChatMessage: builder.mutation({
-      query: ({ chatId, body }: { chatId: string; body: string }) => ({
+      query: ({
+        chatId,
+        body,
+        media,
+      }: {
+        chatId: string;
+        body?: string;
+        media?: { type?: string; url?: string };
+      }) => ({
         url: `/chats/${chatId}/messages`,
         method: "POST",
-        body: { body },
+        body: { body, media },
       }),
       invalidatesTags: (_r, _e, arg: { chatId: string }) => [
         { type: "chats", id: arg.chatId },
         "chats",
       ],
+    }),
+    // edit a message (sender only)
+    editChatMessage: builder.mutation({
+      query: ({
+        chatId,
+        messageId,
+        body,
+      }: {
+        chatId: string;
+        messageId: string;
+        body: string;
+      }) => ({
+        url: `/chats/${chatId}/messages/${messageId}`,
+        method: "PATCH",
+        body: { body },
+      }),
+      invalidatesTags: (_r, _e, arg: { chatId: string }) => [
+        { type: "chats", id: arg.chatId },
+      ],
+    }),
+    // delete a message: scope "self" (default) | "everyone"
+    deleteChatMessage: builder.mutation({
+      query: ({
+        chatId,
+        messageId,
+        scope,
+      }: {
+        chatId: string;
+        messageId: string;
+        scope: string;
+      }) => ({
+        url: `/chats/${chatId}/messages/${messageId}?scope=${scope}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_r, _e, arg: { chatId: string }) => [
+        { type: "chats", id: arg.chatId },
+      ],
+    }),
+    // delete a conversation from the inbox
+    deleteChat: builder.mutation({
+      query: (chatId: string) => ({
+        url: `/chats/${chatId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["chats"],
     }),
     markChatRead: builder.mutation({
       query: (chatId: string) => ({
@@ -71,6 +125,9 @@ export const {
   useGetMyChatsQuery,
   useGetChatMessagesQuery,
   useSendChatMessageMutation,
+  useEditChatMessageMutation,
+  useDeleteChatMessageMutation,
+  useDeleteChatMutation,
   useMarkChatReadMutation,
   useSavePhoneMutation,
   useSaveNameMutation,

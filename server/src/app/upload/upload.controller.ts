@@ -19,6 +19,13 @@ const ALLOWED_MIME = [
   "image/jpg",
   "image/webp",
   "image/gif",
+  // Chat media — videos, voice notes
+  "video/mp4",
+  "video/webm",
+  "audio/webm",
+  "audio/ogg",
+  "audio/mpeg",
+  "audio/mp4",
 ];
 
 const storage = multer.diskStorage({
@@ -31,12 +38,12 @@ const storage = multer.diskStorage({
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 25 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (ALLOWED_MIME.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new AppError(400, "Only PNG, JPEG, WebP or GIF images are allowed"));
+      cb(new AppError(400, "Only PNG, JPEG, WebP, GIF, MP4/WebM video or audio files are allowed"));
     }
   },
 });

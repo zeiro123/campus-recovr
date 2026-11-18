@@ -12,7 +12,12 @@ import {
   FaTachometerAlt,
   FaBars,
   FaTimes,
+  FaComments,
 } from "react-icons/fa";
+import { getSocket, disconnectSocket } from "../../lib/socket";
+import { store } from "../../redux/store";
+import { baseApi } from "../../redux/api/baseApi";
+import { useGetMyChatsQuery } from "../../redux/api/chatApi";
 
 const NAV_LINKS = [
   { label: "Home", to: "/" },
@@ -49,12 +54,41 @@ export function Navbars() {
   const users = useUserVerification();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Inbox unread count (badged on the messages icon) + live socket updates.
+  const chatsQuery = useGetMyChatsQuery(undefined, {
+    skip: !users?.email,
+    pollingInterval: 20000,
+  });
+  const unreadTotal = (chatsQuery.data?.data ?? []).reduce(
+    (sum: number, c: { unreadCount?: number }) => sum + (c.unreadCount || 0),
+    0
+  );
+
   // Close the mobile sheet whenever the route changes
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname, location.hash]);
 
+  // Realtime: a new message invalidates the chat cache everywhere instantly.
+  useEffect(() => {
+    if (!users?.email) return;
+    const s = getSocket();
+    if (!s) return;
+    const onNew = (payload?: { conversationId?: string }) => {
+      const tags: Array<string | { type: string; id: string }> = ["chats"];
+      if (payload?.conversationId) {
+        tags.push({ type: "chats", id: payload.conversationId });
+      }
+      store.dispatch(baseApi.util.invalidateTags(tags));
+    };
+    s.on("message:new", onNew);
+    return () => {
+      s.off("message:new", onNew);
+    };
+  }, [users?.email]);
+
   const handleSignOut = () => {
+    disconnectSocket();
     signOut(navigate);
     toastNotify({ message: "Log out successfully", status: true });
   };
@@ -114,6 +148,21 @@ export function Navbars() {
         <div className="flex items-center gap-2">
           {users?.email ? (
             <div className="flex items-center gap-3">
+              {/* Messages inbox with unread badge */}
+              <Link
+                to="/messages"
+                aria-label={`Inbox — ${unreadTotal} unread message${
+                  unreadTotal === 1 ? "" : "s"
+                }`}
+                className="relative grid h-10 w-10 place-items-center rounded-lg border border-line-strong text-ink-dim transition hover:border-accent/60 hover:text-ink"
+              >
+                <FaComments className="text-sm" />
+                {unreadTotal > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-ink">
+                    {unreadTotal > 99 ? "99+" : unreadTotal}
+                  </span>
+                )}
+              </Link>
               <div className="hidden text-right lg:block">
                 <p className="text-sm font-semibold text-ink">
                   {users?.name || "User"}

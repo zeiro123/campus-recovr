@@ -142,6 +142,11 @@ model ChatMessage {
   sender         User         @relation(fields: [senderId], references: [id])
   createdAt      DateTime     @default(now())
   isDeleted      Boolean      @default(false)
+  edited         Boolean      @default(false)
+  deletedForEveryone Boolean  @default(false)
+  deletedFor     String[]
+  mediaType      String       @default("")
+  mediaUrl       String       @default("")
 
   @@map("chatMessages")
 }

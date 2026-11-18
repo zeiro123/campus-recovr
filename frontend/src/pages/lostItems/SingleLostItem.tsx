@@ -65,6 +65,7 @@ const SingleLostItem = () => {
     location,
     user,
     category,
+    phone,
   } = lostItem;
 
   return (

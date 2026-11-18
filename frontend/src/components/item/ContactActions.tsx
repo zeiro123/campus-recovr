@@ -52,7 +52,10 @@ const ContactActions = ({
   const openChat = async () => {
     if (!ownerUserId) return;
     try {
-      const res = await startChat(ownerUserId).unwrap();
+      const res = await startChat({
+        userId: ownerUserId,
+        item: { name: itemName, type: context },
+      }).unwrap();
       const chatId = res?.data?.id;
       if (chatId) {
         navigate(`/messages/${chatId}`);

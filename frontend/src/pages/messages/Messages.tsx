@@ -1,5 +1,6 @@
-// On-platform chat: conversation list + message thread with live polling.
-// No websockets by design — polling keeps it reliable behind any proxy.
+// On-platform chat: conversation list + message thread, realtime via Socket.IO
+// (with polling as a backstop) — emoji picker, typing indicator, media, edit,
+// and WhatsApp-style date separators.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -7,15 +8,27 @@ import {
   FaComments,
   FaPaperPlane,
   FaUserCircle,
+  FaPhoneAlt,
+  FaMicrophone,
+  FaSmile,
+  FaPaperclip,
+  FaEdit,
+  FaEllipsisH,
+  FaTrash,
 } from "react-icons/fa";
 import { Spinner } from "flowbite-react";
 import {
   useGetChatMessagesQuery,
   useGetMyChatsQuery,
   useSendChatMessageMutation,
+  useEditChatMessageMutation,
+  useDeleteChatMessageMutation,
+  useDeleteChatMutation,
 } from "../../redux/api/chatApi";
-import { useUserVerification } from "../../auth/auth";
-import { getSessionUser } from "../../auth/auth";
+import { useUserVerification, getSessionUser } from "../../auth/auth";
+import { getSocket } from "../../lib/socket";
+import { uploadImageFile } from "../../utils/uploadImage";
+import toastNotify from "../../components/modal/toastNotify";
 
 const relativeTime = (iso: string) => {
   const then = new Date(iso).getTime();
@@ -148,17 +161,51 @@ const Messages = () => {
   );
 };
 
+const EMOJIS = ["😀", "😂", "👍", "🙏", "🔥", "❤️", "😮", "😢", "🎉", "👏", "😍", "🤝"];
+
+const dayLabel = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  const same = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  if (same(d, today)) return "Today";
+  if (same(d, yesterday)) return "Yesterday";
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+};
+
+const exactTime = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+};
+
 const ChatThread = ({ chatId }: { chatId: string }) => {
   const navigate = useNavigate();
   const user = getSessionUser();
   const [draft, setDraft] = useState("");
+  const [editing, setEditing] = useState<{ id: string; body: string } | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [showEmojis, setShowEmojis] = useState(false);
+  const [typingIncoming, setTypingIncoming] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [mediaBusy, setMediaBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const typingTimer = useRef<number | null>(null);
 
   const threadQuery = useGetChatMessagesQuery(chatId, {
-    pollingInterval: 3000,
+    pollingInterval: 20000,
   });
   const [sendChatMessage, { isLoading: sending }] =
     useSendChatMessageMutation();
+  const [editChatMessage] = useEditChatMessageMutation();
+  const [deleteChatMessage] = useDeleteChatMessageMutation();
+  const [deleteChat, { isLoading: deletingChat }] = useDeleteChatMutation();
 
   const otherUser = threadQuery.data?.data?.chat?.otherUser;
   const messages = useMemo(
@@ -168,17 +215,144 @@ const ChatThread = ({ chatId }: { chatId: string }) => {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length]);
+  }, [messages.length, typingIncoming]);
+
+  // Typing indicator — incoming
+  useEffect(() => {
+    const s = getSocket();
+    if (!s) return;
+    const onTyping = (d: { conversationId?: string; typing?: boolean }) => {
+      if (d?.conversationId !== chatId) return;
+      setTypingIncoming(Boolean(d.typing));
+    };
+    s.on("user:typing", onTyping);
+    return () => {
+      s.off("user:typing", onTyping);
+    };
+  }, [chatId]);
+
+  const emitTyping = (typing: boolean) => {
+    getSocket()?.emit("typing", { conversationId: chatId, typing });
+  };
+
+  const handleDraftChange = (v: string) => {
+    setDraft(v);
+    emitTyping(true);
+    if (typingTimer.current) window.clearTimeout(typingTimer.current);
+    typingTimer.current = window.setTimeout(() => emitTyping(false), 1500);
+  };
 
   const send = async () => {
     const body = draft.trim();
-    if (!body || sending) return;
+    if ((!body && !mediaBusy) || sending) return;
     try {
       await sendChatMessage({ chatId, body }).unwrap();
       setDraft("");
+      emitTyping(false);
     } catch {
-      /* the toast on failure is handled by the error layer; keep the draft */
+      /* keep the draft on failure */
     }
+  };
+
+  const saveEdit = async () => {
+    const body = editDraft.trim();
+    if (!editing || !body) return;
+    try {
+      await editChatMessage({ chatId, messageId: editing.id, body }).unwrap();
+      setEditing(null);
+    } catch {
+      /* keep the editor on failure */
+    }
+  };
+
+  const removeMessage = async (messageId: string, scope: string) => {
+    setMenuFor(null);
+    try {
+      await deleteChatMessage({ chatId, messageId, scope }).unwrap();
+    } catch {
+      /* handled by the error layer */
+    }
+  };
+
+  const removeConversation = async () => {
+    try {
+      await deleteChat(chatId).unwrap();
+      navigate("/messages", { replace: true });
+    } catch {
+      /* handled by the error layer */
+    }
+  };
+
+  const sendMedia = async (file: File) => {
+    if (!file) return;
+    setMediaBusy(true);
+    try {
+      const url = await uploadImageFile(file);
+      const kind = file.type.startsWith("image")
+        ? "image"
+        : file.type.startsWith("video")
+        ? "video"
+        : "audio";
+      await sendChatMessage({ chatId, media: { type: kind, url } }).unwrap();
+    } catch (err: any) {
+      toastNotify({ message: err?.message || "Could not send the media", status: false });
+    } finally {
+      setMediaBusy(false);
+    }
+  };
+
+  const toggleRecording = async () => {
+    if (recording) {
+      recorderRef.current?.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setRecording(false);
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
+        setMediaBusy(true);
+        try {
+          const url = await uploadImageFile(file);
+          await sendChatMessage({ chatId, media: { type: "voice", url } }).unwrap();
+        } catch (err: any) {
+          toastNotify({ message: err?.message || "Could not send the voice note", status: false });
+        } finally {
+          setMediaBusy(false);
+        }
+      };
+      recorder.start();
+      recorderRef.current = recorder;
+      setRecording(true);
+    } catch {
+      toastNotify({ message: "Microphone access was denied", status: false });
+    }
+  };
+
+  // Group messages by day for WhatsApp-style separators
+  const visible = messages.filter((m: any) => !(m.deletedFor || []).includes(user?.id || ""));
+  const groups: { day: string; items: any[] }[] = [];
+  visible.forEach((m: any) => {
+    const day = dayLabel(m.createdAt);
+    const last = groups[groups.length - 1];
+    if (last && last.day === day) last.items.push(m);
+    else groups.push({ day, items: [m] });
+  });
+
+  const renderMedia = (m: any) => {
+    if (!m.mediaUrl) return null;
+    if (m.mediaType === "image") {
+      return <img src={m.mediaUrl} alt="" className="mt-1 max-h-56 rounded-xl object-cover" />;
+    }
+    if (m.mediaType === "video") {
+      return <video src={m.mediaUrl} controls className="mt-1 max-h-56 rounded-xl" />;
+    }
+    return <audio src={m.mediaUrl} controls className="mt-1 max-w-[16rem]" />;
   };
 
   return (
@@ -202,14 +376,42 @@ const ChatThread = ({ chatId }: { chatId: string }) => {
           ) : (
             <FaUserCircle className="h-9 w-9 text-ink-mute" />
           )}
-          <div>
-            <p className="font-semibold leading-tight text-ink">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold leading-tight text-ink">
               {otherUser?.username || "Conversation"}
             </p>
             <p className="text-[11px] text-ink-mute">
-              {messages.length} message{messages.length === 1 ? "" : "s"}
+              {typingIncoming ? (
+                <span className="text-accent-soft">typing…</span>
+              ) : (
+                `${messages.length} message${messages.length === 1 ? "" : "s"}`
+              )}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              toastNotify({
+                message: "Voice calls are coming soon — WhatsApp calls work in the meantime.",
+                status: false,
+              });
+            }}
+            aria-label="Voice call (coming soon)"
+            title="Voice call — coming soon"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-mute transition hover:bg-surface-2 hover:text-ink"
+          >
+            <FaPhoneAlt className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={removeConversation}
+            disabled={deletingChat}
+            aria-label="Delete conversation"
+            title="Delete conversation"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-mute transition hover:bg-surface-2 hover:text-rose-300"
+          >
+            <FaTrash className="h-4 w-4" />
+          </button>
         </div>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
@@ -217,7 +419,7 @@ const ChatThread = ({ chatId }: { chatId: string }) => {
             <div className="flex h-full items-center justify-center">
               <Spinner size="lg" className="text-accent" />
             </div>
-          ) : messages.length === 0 ? (
+          ) : visible.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <FaComments className="h-8 w-8 text-ink-mute" />
               <p className="mt-3 text-sm text-ink-dim">
@@ -225,43 +427,226 @@ const ChatThread = ({ chatId }: { chatId: string }) => {
               </p>
             </div>
           ) : (
-            messages.map((m: any) => {
-              const mine = m.senderId === user?.id;
-              return (
-                <div
-                  key={m.id}
-                  className={`flex ${mine ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm ${
-                      mine
-                        ? "rounded-br-sm bg-accent text-white"
-                        : "rounded-bl-sm bg-surface-2 text-ink"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap break-words leading-relaxed">
-                      {m.body}
-                    </p>
-                    <p
-                      className={`mt-1 text-right text-[10px] ${
-                        mine ? "text-white/70" : "text-ink-mute"
-                      }`}
-                    >
-                      {relativeTime(m.createdAt)}
-                    </p>
-                  </div>
+            groups.map((g) => (
+              <div key={g.day}>
+                <div className="mb-3 flex justify-center">
+                  <span className="rounded-full bg-surface-2 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-ink-mute">
+                    {g.day}
+                  </span>
                 </div>
-              );
-            })
+                {g.items.map((m: any) => {
+                  const mine = m.senderId === user?.id;
+                  const isReference = (m.body || "").startsWith("📋 Regarding:");
+                  const isDeletedForAll = m.deletedForEveryone;
+                  if (isReference) {
+                    return (
+                      <div key={m.id} className="flex justify-center">
+                        <div className="max-w-[85%] rounded-xl border border-accent/40 bg-accent/10 px-3.5 py-2 text-center text-xs font-medium text-accent-soft">
+                          {m.body}
+                          <p className="mt-0.5 text-[10px] text-ink-mute">
+                            {exactTime(m.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div
+                      key={m.id}
+                      className={`group flex ${mine ? "justify-end" : "justify-start"}`}
+                    >
+                      <div className="relative max-w-[75%]">
+                        <div
+                          className={`rounded-2xl px-3.5 py-2 text-sm ${
+                            isDeletedForAll
+                              ? "bg-surface-2 italic text-ink-mute"
+                              : mine
+                              ? "rounded-br-sm bg-accent text-white"
+                              : "rounded-bl-sm bg-surface-2 text-ink"
+                          }`}
+                        >
+                          {isDeletedForAll ? (
+                            <p className="whitespace-pre-wrap leading-relaxed">
+                              🚫 This message was deleted
+                            </p>
+                          ) : (
+                            <>
+                              {m.mediaUrl ? renderMedia(m) : null}
+                              {m.body ? (
+                                <p className="whitespace-pre-wrap break-words leading-relaxed">
+                                  {m.body}
+                                </p>
+                              ) : null}
+                            </>
+                          )}
+                          <p
+                            className={`mt-1 text-right text-[10px] ${
+                              mine && !isDeletedForAll ? "text-white/70" : "text-ink-mute"
+                            }`}
+                          >
+                            {exactTime(m.createdAt)}
+                            {m.edited && !isDeletedForAll ? " · edited" : ""}
+                          </p>
+                        </div>
+                        {/* Message actions */}
+                        <div
+                          className={`absolute top-1 ${
+                            mine ? "-left-8" : "-right-8"
+                          } hidden group-hover:block`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setMenuFor(menuFor === m.id ? null : m.id)
+                            }
+                            aria-label="Message options"
+                            className="grid h-6 w-6 place-items-center rounded-full text-ink-mute transition hover:bg-surface-2 hover:text-ink"
+                          >
+                            <FaEllipsisH className="h-3 w-3" />
+                          </button>
+                        </div>
+                        {menuFor === m.id && (
+                          <div
+                            className="fixed inset-0 z-50"
+                            onClick={() => setMenuFor(null)}
+                          >
+                            <div
+                              className={`absolute ${
+                                mine ? "right-4" : "left-4"
+                              } top-16 w-56 overflow-hidden rounded-xl border border-line bg-card shadow-pop`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {mine && !isDeletedForAll && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditing({ id: m.id, body: m.body });
+                                    setEditDraft(m.body);
+                                    setMenuFor(null);
+                                  }}
+                                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-dim transition hover:bg-surface-2 hover:text-ink"
+                                >
+                                  <FaEdit className="h-3.5 w-3.5" /> Edit message
+                                </button>
+                              )}
+                              {mine && !isDeletedForAll && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeMessage(m.id, "everyone")}
+                                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-rose-300 transition hover:bg-rose-500/10"
+                                >
+                                  <FaTrash className="h-3.5 w-3.5" /> Delete for
+                                  everyone
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => removeMessage(m.id, "self")}
+                                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-dim transition hover:bg-surface-2"
+                              >
+                                <FaTrash className="h-3.5 w-3.5" /> Delete for me
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {/* Inline edit */}
+                        {editing?.id === m.id && (
+                          <div className="mt-1 rounded-xl border border-accent/40 bg-surface-2 p-2">
+                            <textarea
+                              value={editDraft}
+                              onChange={(e) => setEditDraft(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  saveEdit();
+                                }
+                                if (e.key === "Escape") setEditing(null);
+                              }}
+                              rows={2}
+                              className="field max-h-24 w-full resize-none text-sm"
+                              autoFocus
+                            />
+                            <div className="mt-1 flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setEditing(null)}
+                                className="btn border border-line px-2.5 py-1 text-xs text-ink-dim"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={saveEdit}
+                                className="btn btn-brand px-2.5 py-1 text-xs"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))
           )}
           <div ref={bottomRef} />
         </div>
 
         <div className="border-t border-line p-3">
+          {showEmojis && (
+            <div className="mb-2 flex flex-wrap gap-1 rounded-xl border border-line bg-surface-2 p-2">
+              {EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => {
+                    setDraft((d) => d + e);
+                    handleDraftChange(draft + e);
+                  }}
+                  className="grid h-9 w-9 place-items-center rounded-lg text-lg transition hover:bg-surface-3"
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex items-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowEmojis((v) => !v)}
+              aria-label="Emoji picker"
+              className="grid h-11 w-10 shrink-0 place-items-center rounded-lg text-ink-mute transition hover:text-ink"
+            >
+              <FaSmile className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              aria-label="Attach media"
+              className="grid h-11 w-10 shrink-0 place-items-center rounded-lg text-ink-mute transition hover:text-ink"
+            >
+              {mediaBusy ? (
+                <Spinner size="sm" className="text-accent" />
+              ) : (
+                <FaPaperclip className="h-4 w-4" />
+              )}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*,video/mp4,video/webm"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) sendMedia(f);
+                e.target.value = "";
+              }}
+            />
             <textarea
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => handleDraftChange(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -274,10 +659,27 @@ const ChatThread = ({ chatId }: { chatId: string }) => {
             />
             <button
               type="button"
+              onClick={toggleRecording}
+              aria-label={recording ? "Stop recording" : "Record voice note"}
+              title={recording ? "Stop & send" : "Record voice note"}
+              className={`grid h-11 w-10 shrink-0 place-items-center rounded-lg transition ${
+                recording
+                  ? "bg-rose-500/20 text-rose-300"
+                  : "text-ink-mute hover:text-ink"
+              }`}
+            >
+              {recording ? (
+                <span className="h-3 w-3 animate-pulse rounded-full bg-rose-400" />
+              ) : (
+                <FaMicrophone className="h-4 w-4" />
+              )}
+            </button>
+            <button
+              type="button"
               onClick={send}
               disabled={sending || !draft.trim()}
               aria-label="Send message"
-              className="btn btn-brand flex h-11 w-11 items-center justify-center !p-0 disabled:opacity-50"
+              className="btn btn-brand flex h-11 w-11 shrink-0 items-center justify-center !p-0 disabled:opacity-50"
             >
               {sending ? (
                 <Spinner size="sm" className="text-white" />

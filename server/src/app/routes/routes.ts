@@ -192,6 +192,20 @@ router.get("/my/chats", auth(), chatController.getMyChats);
 router.get("/chats/:id/messages", auth(), chatController.getChatMessages);
 // send a message
 router.post("/chats/:id/messages", auth(), chatController.sendMessage);
+// edit a message (sender only)
+router.patch(
+  "/chats/:id/messages/:messageId",
+  auth(),
+  chatController.editMessage
+);
+// delete a message: ?scope=self (default) | everyone
+router.delete(
+  "/chats/:id/messages/:messageId",
+  auth(),
+  chatController.deleteMessage
+);
+// delete a conversation from the inbox
+router.delete("/chats/:id", auth(), chatController.deleteChat);
 // mark incoming messages read
 router.put("/chats/:id/read", auth(), chatController.markChatRead);
 
