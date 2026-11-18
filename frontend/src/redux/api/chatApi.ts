@@ -54,6 +54,14 @@ const chatApi = baseApi.injectEndpoints({
         body: { phone },
       }),
     }),
+    // display name (social users can set an anonymous handle)
+    saveName: builder.mutation({
+      query: (name: string) => ({
+        url: "/user/name",
+        method: "PUT",
+        body: { name },
+      }),
+    }),
   }),
   overrideExisting: false,
 });
@@ -65,4 +73,5 @@ export const {
   useSendChatMessageMutation,
   useMarkChatReadMutation,
   useSavePhoneMutation,
+  useSaveNameMutation,
 } = chatApi;

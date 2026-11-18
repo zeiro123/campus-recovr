@@ -180,6 +180,9 @@ router.post("/upload", auth(), upload.single("image"), uploadController.uploadIm
 // profile phone number (optional, used for the WhatsApp handoff)
 router.put("/user/phone", auth(), userController.updatePhone);
 
+// display name (social users can set an anonymous handle)
+router.put("/user/name", auth(), userController.updateName);
+
 //////////////////////////////////////////////////chat//////////////////////////////////////////////
 // get (or create) a 1:1 conversation with a user
 router.post("/chats", auth(), chatController.createChat);

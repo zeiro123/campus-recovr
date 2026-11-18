@@ -20,6 +20,7 @@ type Props = {
   ownerUserId?: string;
   ownerUsername?: string;
   ownerPhone?: string;
+  itemPhone?: string;
   itemName: string;
   context: "lost" | "found";
 };
@@ -28,6 +29,7 @@ const ContactActions = ({
   ownerUserId,
   ownerUsername,
   ownerPhone,
+  itemPhone,
   itemName,
   context,
 }: Props) => {
@@ -36,7 +38,11 @@ const ContactActions = ({
   const [startChat, { isLoading }] = useStartChatMutation();
 
   const isOwner = Boolean(user && ownerUserId && user.id === ownerUserId);
-  const hasPhone = Boolean(ownerPhone && ownerPhone.replace(/\D/g, "").length >= 7);
+  // The item's own phone (set when reporting) wins over the profile phone.
+  const contactPhone = (itemPhone && itemPhone.replace(/\D/g, "").length >= 7
+    ? itemPhone
+    : ownerPhone) as string | undefined;
+  const hasPhone = Boolean(contactPhone && contactPhone.replace(/\D/g, "").length >= 7);
 
   const waText =
     context === "lost"
@@ -87,7 +93,7 @@ const ContactActions = ({
           </button>
           {hasPhone && (
             <a
-              href={whatsappHref(ownerPhone as string, waText)}
+              href={whatsappHref(contactPhone as string, waText)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn flex items-center gap-2 border border-emerald-500/60 px-4 py-2 text-emerald-400 transition hover:bg-emerald-500/10"

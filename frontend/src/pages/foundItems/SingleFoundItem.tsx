@@ -21,6 +21,7 @@ import {
   FaExclamationTriangle,
 } from "react-icons/fa";
 import ContactActions from "../../components/item/ContactActions";
+import ItemPhoto from "../../components/item/ItemPhoto";
 
 const SingleFoundItem = () => {
   const { foundItem: foundItemParam } = useParams<{ foundItem: string }>();
@@ -165,13 +166,10 @@ const SingleFoundItem = () => {
             <div className="space-y-6">
               <div className="group relative">
                 <div className="aspect-square overflow-hidden rounded-2xl border border-line bg-surface-2 shadow-card">
-                  <img
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  <ItemPhoto
                     src={foundItemData?.img}
                     alt={foundItemData?.foundItemName}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/bgimg.png";
-                    }}
+                    className="h-full w-full"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
                 </div>
@@ -263,6 +261,7 @@ const SingleFoundItem = () => {
                 ownerUserId={foundItemData?.user?.id}
                 ownerUsername={foundItemData?.user?.username}
                 ownerPhone={foundItemData?.user?.phone}
+                itemPhone={foundItemData?.phone}
                 itemName={foundItemData?.foundItemName || "this item"}
                 context="found"
               />

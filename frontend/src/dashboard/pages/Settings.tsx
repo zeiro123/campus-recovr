@@ -16,8 +16,8 @@ import {
   useChangeEmailMutation,
   useChangeUsernameMutation,
 } from "../../redux/api/api";
-import { useSavePhoneMutation } from "../../redux/api/chatApi";
-import { removeUserLocalStorage, useUserVerification } from "../../auth/auth";
+import { useSavePhoneMutation, useSaveNameMutation } from "../../redux/api/chatApi";
+import { removeUserLocalStorage, setUserLocalStorage, useUserVerification } from "../../auth/auth";
 import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
@@ -32,6 +32,8 @@ const Settings = () => {
   const [changeUsername, { isLoading: isUsernameLoading }] =
     useChangeUsernameMutation();
   const [savePhone, { isLoading: isPhoneLoading }] = useSavePhoneMutation();
+  const [saveName, { isLoading: isNameLoading }] = useSaveNameMutation();
+  const [displayName, setDisplayName] = useState(user?.name || "");
 
   const passwordForm = useForm<{
     currentPassword: string;
@@ -164,6 +166,53 @@ const Settings = () => {
 
         {/* Forms */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Display name */}
+          <div className="card p-6">
+            <div className="mb-5 flex items-center gap-3">
+              <FaUserTag className="text-accent" />
+              <h2 className="text-lg font-semibold text-ink">Display Name</h2>
+            </div>
+            <p className="mb-4 text-sm text-ink-dim">
+              Shown next to your activity instead of your real name. Set
+              something anonymous — a nickname or handle works great.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <input
+                id="displayName"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="field flex-1"
+                placeholder="e.g. anonymous_scholar"
+                maxLength={60}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await saveName(displayName).unwrap();
+                    if (res?.data?.token) {
+                      setUserLocalStorage(res.data.token);
+                    }
+                    toast.success(
+                      displayName.trim()
+                        ? "Display name saved!"
+                        : "Display name cleared."
+                    );
+                  } catch (err: any) {
+                    toast.error(
+                      getErrorMessage(err, "Failed to save your display name.")
+                    );
+                  }
+                }}
+                disabled={isNameLoading}
+                className="btn btn-brand sm:w-36"
+              >
+                {isNameLoading ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+
           {/* WhatsApp Number */}
           <div className="card p-6">
             <div className="mb-5 flex items-center gap-3">

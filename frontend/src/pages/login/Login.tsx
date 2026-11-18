@@ -6,7 +6,7 @@ import { setUserLocalStorage } from "../../auth/auth";
 import { useLoginMutation } from "../../redux/api/api";
 import { Link, useNavigate } from "react-router-dom";
 import { MdEmail, MdVisibility, MdVisibilityOff } from "react-icons/md";
-import { FaGoogle, FaFacebook } from "react-icons/fa";
+import { FaGoogle } from "react-icons/fa";
 import { useState } from "react";
 import { supabase, oauthConfigured } from "../../lib/supabase";
 
@@ -167,20 +167,7 @@ const Login = () => {
                 ) : (
                   <FaGoogle className="text-[#DB4437]" />
                 )}
-                Google
-              </button>
-              <button
-                type="button"
-                onClick={() => signInWithProvider("facebook")}
-                disabled={oauthLoading !== null}
-                className="btn btn-outline flex w-full items-center justify-center gap-2"
-              >
-                {oauthLoading === "facebook" ? (
-                  <Spinner size="sm" className="text-accent" />
-                ) : (
-                  <FaFacebook className="text-[#1877F2]" />
-                )}
-                Facebook
+                Continue with Google
               </button>
             </div>
             {!oauthConfigured && (

@@ -23,6 +23,26 @@ const NAV_LINKS = [
   { label: "AI Search", to: "/ai-search" },
 ];
 
+// Profile avatar with a graceful initials fallback — never a broken image.
+function Avatar({ src, fallbackText }: { src?: string; fallbackText: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || src.trim() === "" || failed) {
+    return (
+      <div className="grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-surface-3 text-sm font-semibold text-ink transition group-hover:border-accent/60">
+        {fallbackText}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt="User"
+      onError={() => setFailed(true)}
+      className="h-10 w-10 rounded-full border border-line-strong object-cover transition group-hover:border-accent/60"
+    />
+  );
+}
+
 export function Navbars() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -108,19 +128,15 @@ export function Navbars() {
                 inline
                 label={
                   <div className="group relative cursor-pointer">
-                    {users?.userImg ? (
-                      <img
-                        src={users?.userImg}
-                        alt="User"
-                        className="h-10 w-10 rounded-full border border-line-strong object-cover transition group-hover:border-accent/60"
-                      />
-                    ) : (
-                      <div className="grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-surface-3 text-sm font-semibold text-ink transition group-hover:border-accent/60">
-                        {users?.name?.charAt(0)?.toUpperCase() ||
-                          users?.email?.charAt(0)?.toUpperCase() ||
-                          "U"}
-                      </div>
-                    )}
+                    <Avatar
+                      src={users?.userImg}
+                      fallbackText={
+                        users?.name?.charAt(0)?.toUpperCase() ||
+                        users?.username?.charAt(0)?.toUpperCase() ||
+                        users?.email?.charAt(0)?.toUpperCase() ||
+                        "U"
+                      }
+                    />
                     <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-canvas bg-ok" />
                   </div>
                 }

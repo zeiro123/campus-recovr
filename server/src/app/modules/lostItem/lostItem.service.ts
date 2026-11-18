@@ -45,6 +45,7 @@ const createLostItem = async (userId: string, item: LostItem) => {
       img: item.img,
       location: item.location,
       date: item.date,
+      phone: (item.phone ?? "").replace(/[^\d+]/g, "").slice(0, 20),
       userId,
     },
     include: {
@@ -151,6 +152,9 @@ const editMyLostItem = async (data: any, user?: JwtPayload) => {
   }
   if (data?.img) {
     updateData.img = data.img;
+  }
+  if (typeof data?.phone === "string") {
+    updateData.phone = data.phone.replace(/[^\d+]/g, "").slice(0, 20);
   }
 
   // If user is provided, ensure they can only edit their own items

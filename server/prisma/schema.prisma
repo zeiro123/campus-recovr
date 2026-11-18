@@ -61,6 +61,7 @@ model FoundItem {
   isClaimed     Boolean            @default(false)
   isDeleted     Boolean            @default(false)
   deletedAt     DateTime?
+  phone         String             @default("")
 
   @@map("foundItems")
 }
@@ -80,6 +81,7 @@ model LostItem {
   isFound      Boolean            @default(false)
   isDeleted    Boolean            @default(false)
   deletedAt    DateTime?
+  phone        String             @default("")
   user         User               @relation(fields: [userId], references: [id])
 
   @@map("lostItems")

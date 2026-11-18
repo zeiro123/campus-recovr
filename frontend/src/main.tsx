@@ -65,11 +65,19 @@ const router = createBrowserRouter([
       },
       {
         path: "/reportLostItem",
-        element: <ReportLostItem />,
+        element: (
+          <RequireAuth>
+            <ReportLostItem />
+          </RequireAuth>
+        ),
       },
       {
         path: "/reportFoundItem",
-        element: <ReportFoundItem />,
+        element: (
+          <RequireAuth>
+            <ReportFoundItem />
+          </RequireAuth>
+        ),
       },
       {
         path: "/ai-search",

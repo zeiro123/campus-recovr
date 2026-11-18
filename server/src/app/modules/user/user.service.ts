@@ -144,6 +144,27 @@ const updateUserPhone = async (id: string, phone: string) => {
   return updated;
 };
 
+// Display name — lets social users replace their real name with an anonymous one.
+const updateUserName = async (id: string, name: string) => {
+  const clean = (name ?? "").trim().slice(0, 60);
+  const updated = await prisma.user.update({
+    where: { id },
+    data: { name: clean },
+  });
+  // Re-issue the token so the UI reflects the new name without a re-login.
+  const { name: newName, email, username, role, userImg, phone } = updated;
+  const token = utils.createToken({
+    id,
+    name: newName,
+    email,
+    username,
+    role,
+    userImg,
+    phone,
+  });
+  return { id, username: updated.username, name: updated.name, token };
+};
+
 export const userService = {
   registerUser,
   allUsers,
@@ -151,4 +172,5 @@ export const userService = {
   changeUserRole,
   softDeleteUser,
   updateUserPhone,
+  updateUserName,
 };

@@ -11,7 +11,9 @@ import {
   MdVisibility,
   MdVisibilityOff,
 } from "react-icons/md";
+import { FaGoogle } from "react-icons/fa";
 import { useState } from "react";
+import { supabase, oauthConfigured } from "../../lib/supabase";
 
 type RegisterForm = {
   email: string;
@@ -25,6 +27,7 @@ const Register = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
   const {
     handleSubmit,
     register,
@@ -32,6 +35,27 @@ const Register = () => {
   } = useForm<RegisterForm>();
 
   const [registers, { isLoading }] = useRegistersMutation();
+
+  // Same social flow as the login page — Supabase handles Google, the
+  // callback page exchanges the session for the app JWT (and creates the user).
+  const signInWithGoogle = async () => {
+    if (!supabase) {
+      toastNotify({ message: "Social sign-in is not configured", status: false });
+      return;
+    }
+    setOauthLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/oauth/callback` },
+    });
+    if (error) {
+      setOauthLoading(false);
+      toastNotify({
+        message: "Google sign-in isn't configured yet.",
+        status: false,
+      });
+    }
+  };
 
   const onSubmit = async (data: RegisterForm) => {
     if (data.password !== data.conpassword) {
@@ -74,6 +98,30 @@ const Register = () => {
           <p className="text-sm text-ink-dim">
             Join the UZ lost and found community
           </p>
+        </div>
+
+        {/* Social sign-in */}
+        <div className="mb-5 space-y-3">
+          <button
+            type="button"
+            onClick={signInWithGoogle}
+            disabled={oauthLoading}
+            className="btn btn-outline flex w-full items-center justify-center gap-2"
+          >
+            {oauthLoading ? (
+              <Spinner size="sm" className="text-accent" />
+            ) : (
+              <FaGoogle className="text-[#DB4437]" />
+            )}
+            Continue with Google
+          </button>
+          <div className="flex items-center">
+            <div className="flex-grow border-t border-line"></div>
+            <span className="px-3 text-center text-xs font-semibold uppercase tracking-wider text-ink-mute">
+              or sign up with email
+            </span>
+            <div className="flex-grow border-t border-line"></div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

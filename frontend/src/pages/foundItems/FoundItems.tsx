@@ -107,6 +107,7 @@ const PanelBody = ({
         ownerUserId={item?.user?.id}
         ownerUsername={item?.user?.username}
         ownerPhone={item?.user?.phone}
+        itemPhone={item?.phone}
         itemName={item?.foundItemName || "this item"}
         context="found"
       />

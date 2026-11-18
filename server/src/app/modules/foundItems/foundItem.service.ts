@@ -12,6 +12,7 @@ const createFoundItem = async (data: FoundItem, userId: string) => {
       img: data.img,
       foundItemName: data.foundItemName,
       location: data.location,
+      phone: (data.phone ?? "").replace(/[^\d+]/g, "").slice(0, 20),
       userId,
     },
     include: {

@@ -11,6 +11,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { IoIosArrowDown } from "react-icons/io";
 import { FaBullhorn, FaTimes } from "react-icons/fa";
 import type { ItemCategory } from "../../types/types";
+import { useUserVerification } from "../../auth/auth";
 import {
   IMAGE_ACCEPT,
   MAX_IMAGE_BYTES,
@@ -32,11 +33,13 @@ const ReportLostItem = () => {
     reset,
   } = useForm<ReportLostForm>();
 
+  const user = useUserVerification();
   const [categoryId, setCategoryId] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [createLostItem, { isLoading }] = useCreateLostItemMutation();
   const { data: Category } = useCategoryQuery("");
   const [startDate, setStartDate] = useState(new Date());
+  const [phone, setPhone] = useState(user?.phone || "");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageError, setImageError] = useState("");
@@ -81,6 +84,7 @@ const ReportLostItem = () => {
         img: imageUrl,
         location: data.location,
         date: startDate,
+        phone,
       };
       const res = await createLostItem(lostData);
       if (res?.data?.success == false) {
@@ -188,6 +192,24 @@ const ReportLostItem = () => {
               {imageError && <p className="field-error">{imageError}</p>}
               <p className="mt-1 text-[11px] text-ink-mute">
                 PNG, JPEG, WebP or GIF — up to 5 MB.
+              </p>
+            </div>
+            <div>
+              <label htmlFor="contactPhone" className="field-label">
+                Contact phone (optional)
+              </label>
+              <input
+                id="contactPhone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="field"
+                placeholder="e.g. 0772 123 4567"
+                maxLength={20}
+              />
+              <p className="mt-1 text-[11px] text-ink-mute">
+                If shared, people who find this item get a "Chat on WhatsApp"
+                button. Leave blank to stay on-platform.
               </p>
             </div>
             <div>

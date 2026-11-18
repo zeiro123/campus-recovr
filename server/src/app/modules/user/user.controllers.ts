@@ -128,6 +128,23 @@ const updatePhone = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+const updateName = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name } = req.body;
+    const result = await userService.updateUserName(req.user.id, name);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: result.name
+        ? "Display name saved"
+        : "Display name cleared",
+      data: result,
+    });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
 export const userController = {
   registerUser,
   allUsers,
@@ -135,4 +152,5 @@ export const userController = {
   changeUserRole,
   softDeleteUser,
   updatePhone,
+  updateName,
 };
