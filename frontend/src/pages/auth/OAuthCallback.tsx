@@ -7,9 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { Spinner } from "flowbite-react";
 import { supabase } from "../../lib/supabase";
 import { setUserLocalStorage } from "../../auth/auth";
-
-const serverUrl = import.meta.env.VITE_SERVER_URL?.replace(/\/+$/, "");
-const apiBase = serverUrl ? `${serverUrl}/api` : "http://localhost:5000/api";
+import { baseUrl as apiBase } from "../../redux/api/baseApi";
 
 const OAuthCallback = () => {
   const navigate = useNavigate();

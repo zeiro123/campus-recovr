@@ -4,11 +4,18 @@ import { getUserLocalStorage } from "../../auth/auth";
 const serverUrl = import.meta.env.VITE_SERVER_URL?.replace(/\/+$/, "");
 // Same-origin API in production builds (the Express server serves the built
 // frontend); localhost fallback keeps dev pointed at the local API.
-const baseUrl = serverUrl
+export const baseUrl = serverUrl
   ? `${serverUrl}/api`
   : import.meta.env.PROD
     ? "/api"
     : "http://localhost:5001/api";
+// Origin for the realtime socket (no /api suffix). Empty string in production
+// means same-origin — io() with no URI connects to the current origin.
+export const serverOrigin = serverUrl
+  ? serverUrl
+  : import.meta.env.PROD
+    ? ""
+    : "http://localhost:5001";
 
 export const baseApi = createApi({
   reducerPath: "baseApi",

@@ -1,10 +1,7 @@
 // Shared image upload: posts the picked file to POST /api/upload (multipart)
 // and returns the absolute URL the backend serves it at (/uploads/<file>).
 import { getUserLocalStorage } from "../auth/auth";
-
-const serverUrl = import.meta.env.VITE_SERVER_URL?.replace(/\/+$/, "");
-const fallbackUrl = "http://localhost:5000/api";
-const apiBase = serverUrl ? `${serverUrl}/api` : fallbackUrl;
+import { baseUrl as apiBase } from "../redux/api/baseApi";
 
 export const IMAGE_ACCEPT =
   "image/png,image/jpeg,image/jpg,image/webp,image/gif";

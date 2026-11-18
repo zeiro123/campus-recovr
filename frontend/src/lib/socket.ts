@@ -2,9 +2,9 @@
 // exists, carrying the app's JWT in the handshake for server-side auth.
 import { io, Socket } from "socket.io-client";
 import { getUserLocalStorage } from "../auth/auth";
+import { serverOrigin } from "../redux/api/baseApi";
 
-const serverUrl = import.meta.env.VITE_SERVER_URL?.replace(/\/+$/, "");
-const socketUrl = serverUrl || "http://localhost:5001";
+const socketUrl = serverOrigin || undefined;
 
 let socket: Socket | null = null;
 
