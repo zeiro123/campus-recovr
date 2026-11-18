@@ -29,10 +29,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/", (req: Request, res: Response) => {
-  res.send({ message: "Welcome to Campus RecovR services!" });
-});
-
 app.use("/uploads", express.static(UPLOAD_DIR));
 app.use("/api", apiLimiter, router);
 
@@ -40,9 +36,13 @@ app.use("/api", apiLimiter, router);
 // so the API and the site share one origin. Dev (no dist) keeps the JSON root.
 const FRONTEND_DIST = path.join(__dirname, "../../frontend/dist");
 if (existsSync(FRONTEND_DIST)) {
-  app.use(express.static(FRONTEND_DIST));
+  app.use(express.static(FRONTEND_DIST)); // serves "/" via index.html
   app.get(/^\/(?!api|uploads).*/, (_req: Request, res: Response) => {
     res.sendFile(path.join(FRONTEND_DIST, "index.html"));
+  });
+} else {
+  app.get("/", (req: Request, res: Response) => {
+    res.send({ message: "Welcome to Campus RecovR services!" });
   });
 }
 
