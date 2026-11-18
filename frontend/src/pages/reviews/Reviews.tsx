@@ -1,57 +1,74 @@
-import { FaUser, FaQuoteLeft } from "react-icons/fa";
+import { FaQuoteLeft, FaUser } from "react-icons/fa";
 import StarRatings from "react-star-ratings";
-import { useGetTestimonialsQuery } from "../../redux/api/api";
-import { Spinner } from "flowbite-react";
 
 interface Testimonial {
-  id?: string;
   rating: number;
   feedback: string;
   name: string;
   position: string;
 }
 
-// Fallback static data if no data from server
-const fallbackTestimonials: Testimonial[] = [
+const testimonials: Testimonial[] = [
   {
     rating: 5,
     feedback:
-      "Campus RecovR has streamlined our process of returning lost items to their owners. It's incredibly user-friendly and efficient.",
-    name: "Michael T.",
-    position: "Operations Manager",
+      "This platform saved me $20 — I found my lost ID in just a few days after listing it!",
+    name: "Tinotenda Sithole",
+    position: "Student, Faculty of Science",
   },
   {
-    rating: 4,
+    rating: 4.5,
     feedback:
-      "I was able to quickly report my lost item, and the system helped me track its status until it was returned. Excellent service!",
-    name: "Sarah L.",
-    position: "Frequent Traveler",
+      "I found a charger cable in the library and listed it here — the owner reached out the very same day.",
+    name: "Tanaka Chigura",
+    position: "Student, Faculty of Engineering",
   },
   {
-    rating: 3,
+    rating: 5,
     feedback:
-      "This system has drastically reduced the time and effort needed to manage lost items. It's a game-changer for our department.",
-    name: "David R.",
-    position: "Customer Service Lead",
+      "This app is saving us a lot of money. Kudos to the guys who created it!",
+    name: "Thomas Tavengwa",
+    position: "Student, Faculty of Commerce",
+  },
+  {
+    rating: 3.5,
+    feedback:
+      "Lost my student ID at the cafeteria and had it back before the week ended. Works like magic!",
+    name: "Trinity Tauro",
+    position: "Student, Faculty of Law",
   },
 ];
 
+const ReviewCard = ({ testimonial }: { testimonial: Testimonial }) => (
+  <figure className="card flex w-80 shrink-0 flex-col items-center gap-5 p-6 text-center sm:w-96">
+    <div className="grid h-14 w-14 place-items-center rounded-full bg-surface-3 text-ink-mute">
+      <FaUser size="20" />
+    </div>
+
+    <figcaption>
+      <p className="text-base font-semibold text-ink">{testimonial.name}</p>
+      <p className="mt-0.5 text-sm text-ink-mute">{testimonial.position}</p>
+    </figcaption>
+
+    <div className="flex justify-center">
+      <StarRatings
+        rating={testimonial.rating}
+        starDimension="20px"
+        starSpacing="2px"
+        starRatedColor="#F87D0D"
+      />
+    </div>
+
+    <blockquote className="text-sm leading-relaxed text-ink-dim">
+      "{testimonial.feedback}"
+    </blockquote>
+  </figure>
+);
+
 const Reviews = () => {
-  const { data: testimonialsData, isLoading } = useGetTestimonialsQuery({});
+  // Two copies back-to-back so the -50% translate loops seamlessly.
+  const loop = [...testimonials, ...testimonials];
 
-  if (isLoading) {
-    return (
-      <section className="py-16 lg:py-24">
-        <div className="flex items-center justify-center">
-          <Spinner size="xl" className="text-accent" />
-        </div>
-      </section>
-    );
-  }
-
-  // Use server data if available, otherwise fallback to static data
-  const testimonials: Testimonial[] =
-    testimonialsData?.data || fallbackTestimonials;
   return (
     <section className="py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -60,47 +77,26 @@ const Reviews = () => {
             <FaQuoteLeft />
             Testimonials
           </span>
-          <h2 className="section-title">What Our Customers Say</h2>
+          <h2 className="section-title">What UZ Students Say</h2>
           <p className="section-sub">
-            Hear from the people who trust us with their lost and found items
+            Hear from the students who got their belongings back on Campus
+            RecovR
           </p>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {testimonials?.map((testimonial: Testimonial, i: number) => {
-            return (
-              <figure
-                key={`${testimonial.id || testimonial.name}-${i}`}
-                className="card card-hover flex flex-col items-center gap-5 p-6 text-center"
-              >
-                <div className="grid h-14 w-14 place-items-center rounded-full bg-surface-3 text-ink-mute">
-                  <FaUser size="20" />
-                </div>
-
-                <figcaption>
-                  <p className="text-base font-semibold text-ink">
-                    {testimonial.name}
-                  </p>
-                  <p className="mt-0.5 text-sm text-ink-mute">
-                    {testimonial.position}
-                  </p>
-                </figcaption>
-
-                <div className="flex justify-center">
-                  <StarRatings
-                    rating={testimonial.rating}
-                    starDimension="20px"
-                    starSpacing="2px"
-                    starRatedColor="#38bdf8"
-                  />
-                </div>
-
-                <blockquote className="text-sm leading-relaxed text-ink-dim">
-                  "{testimonial.feedback}"
-                </blockquote>
-              </figure>
-            );
-          })}
+      {/* Sliding marquee — pauses on hover */}
+      <div
+        className="marquee-paused overflow-hidden"
+        aria-label="Student testimonials"
+      >
+        <div className="animate-marquee flex w-max gap-6 px-4 py-2">
+          {loop.map((testimonial, i) => (
+            <ReviewCard
+              key={`${testimonial.name}-${i}`}
+              testimonial={testimonial}
+            />
+          ))}
         </div>
       </div>
     </section>
