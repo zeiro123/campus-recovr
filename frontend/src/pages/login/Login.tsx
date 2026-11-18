@@ -4,7 +4,7 @@ import toastNotify from "../../components/modal/toastNotify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
 import { setUserLocalStorage } from "../../auth/auth";
 import { useLoginMutation } from "../../redux/api/api";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MdEmail, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { FaGoogle } from "react-icons/fa";
 import { useState } from "react";
@@ -12,6 +12,9 @@ import { supabase, oauthConfigured } from "../../lib/supabase";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Set by RequireAuth when a login-required service was attempted.
+  const from = (location.state as { from?: string } | null)?.from;
   const [showPassword, setShowPassword] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "facebook" | null>(
     null
@@ -54,7 +57,7 @@ const Login = () => {
       if (res?.data) {
         toastNotify({ message: "User logged in successfully", status: true });
         setUserLocalStorage(res?.data?.data?.token);
-        navigate("/");
+        navigate(from || "/");
       } else {
         toastNotify({
           message: getErrorMessage(res?.error, "Failed to login"),
@@ -69,6 +72,20 @@ const Login = () => {
   return (
     <section className="page flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md card p-8">
+        {from && (
+          <div
+            role="status"
+            className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3"
+          >
+            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-500/20 text-xs text-emerald-400">
+              ✓
+            </span>
+            <p className="text-sm leading-relaxed text-emerald-300">
+              Please log in to use that service. Once you're in, we'll take you
+              right back to it.
+            </p>
+          </div>
+        )}
         <div className="mb-8 space-y-2 text-center">
           <h1 className="text-2xl font-bold text-ink">Welcome Back</h1>
           <p className="text-sm text-ink-dim">Sign in to your account</p>
