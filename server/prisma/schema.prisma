@@ -29,6 +29,9 @@ name   String @default("")
   conversationsOne Conversation[] @relation("ConversationsOne")
   conversationsTwo Conversation[] @relation("ConversationsTwo")
   chatMessages     ChatMessage[]
+  blocksGiven      Block[]        @relation("BlocksGiven")
+  blocksReceived   Block[]        @relation("BlocksReceived")
+  notifications    Notification[]
 
   @@map("users")
 }
@@ -84,6 +87,7 @@ model LostItem {
   deletedAt    DateTime?
   phone        String             @default("")
   user         User               @relation(fields: [userId], references: [id])
+  claims       Claim[]
 
   @@map("lostItems")
 }
@@ -91,16 +95,24 @@ model LostItem {
 model Claim {
   id                     String    @id @default(uuid())
   userId                 String
-  foundItemId            String
+  foundItemId            String?
+  lostItemId             String?
   isDeleted    Boolean            @default(false)
   deletedAt    DateTime?
   status                 status    @default(PENDING)
   distinguishingFeatures String?
-  lostDate               DateTime
+  lostDate               DateTime?
+  viewedAt               DateTime?
+  infoRequest            String?
+  rejectionReason        String?
+  appealMessage          String?
+  appealedAt             DateTime?
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   user                   User      @relation(fields: [userId], references: [id])
-  foundItem              FoundItem @relation(fields: [foundItemId], references: [id])
+  foundItem              FoundItem? @relation(fields: [foundItemId], references: [id])
+  lostItem               LostItem?  @relation(fields: [lostItemId], references: [id])
+  notifications          Notification[]
 
   @@map("claims")
 }
@@ -110,6 +122,35 @@ enum status {
   PENDING
   APPROVED
   REJECTED
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker   User     @relation("BlocksGiven", fields: [blockerId], references: [id])
+  blocked   User     @relation("BlocksReceived", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+  @@map("blocks")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  type      String    @default("system")
+  title     String
+  body      String    @default("")
+  link      String?
+  read      Boolean   @default(false)
+  claimId   String?
+  claim     Claim?    @relation(fields: [claimId], references: [id], onDelete: SetNull)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, read])
+  @@map("notifications")
 }
 
 enum userRole {

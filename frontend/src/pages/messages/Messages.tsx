@@ -15,6 +15,7 @@ import {
   FaEdit,
   FaEllipsisH,
   FaTrash,
+  FaBan,
 } from "react-icons/fa";
 import { Spinner } from "flowbite-react";
 import {
@@ -25,6 +26,11 @@ import {
   useDeleteChatMessageMutation,
   useDeleteChatMutation,
 } from "../../redux/api/chatApi";
+import {
+  useGetBlockedUsersQuery,
+  useBlockUserMutation,
+  useUnblockUserMutation,
+} from "../../redux/api/claimsApi";
 import { useUserVerification, getSessionUser } from "../../auth/auth";
 import { getSocket } from "../../lib/socket";
 import { uploadImageFile } from "../../utils/uploadImage";
@@ -206,8 +212,35 @@ const ChatThread = ({ chatId }: { chatId: string }) => {
   const [editChatMessage] = useEditChatMessageMutation();
   const [deleteChatMessage] = useDeleteChatMessageMutation();
   const [deleteChat, { isLoading: deletingChat }] = useDeleteChatMutation();
+  const { data: blockedUsersData } = useGetBlockedUsersQuery();
+  const [blockUser] = useBlockUserMutation();
+  const [unblockUser] = useUnblockUserMutation();
 
   const otherUser = threadQuery.data?.data?.chat?.otherUser;
+  const isBlocked = (blockedUsersData?.data ?? []).some(
+    (b: any) => b.userId === otherUser?.id
+  );
+
+  const toggleBlock = async () => {
+    if (!otherUser?.id) return;
+    try {
+      if (isBlocked) {
+        await unblockUser(otherUser.id).unwrap();
+        toastNotify({ message: "User unblocked", status: true });
+      } else {
+        await blockUser(otherUser.id).unwrap();
+        toastNotify({
+          message: "User blocked — they can no longer message you",
+          status: true,
+        });
+      }
+    } catch (err: any) {
+      toastNotify({
+        message: err?.data?.message || "Could not update the block",
+        status: false,
+      });
+    }
+  };
   const messages = useMemo(
     () => threadQuery.data?.data?.messages ?? [],
     [threadQuery.data]
@@ -404,6 +437,21 @@ const ChatThread = ({ chatId }: { chatId: string }) => {
           </button>
           <button
             type="button"
+            onClick={toggleBlock}
+            aria-label={isBlocked ? "Unblock user" : "Block user"}
+            title={
+              isBlocked ? "Unblock this user" : "Block this user (they can no longer message you)"
+            }
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
+              isBlocked
+                ? "text-rose-300 hover:bg-rose-500/10"
+                : "text-ink-mute hover:bg-surface-2 hover:text-ink"
+            }`}
+          >
+            <FaBan className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
             onClick={removeConversation}
             disabled={deletingChat}
             aria-label="Delete conversation"
@@ -595,6 +643,12 @@ const ChatThread = ({ chatId }: { chatId: string }) => {
         </div>
 
         <div className="border-t border-line p-3">
+          {isBlocked && (
+            <div className="mb-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-center text-sm text-rose-300">
+              🚫 You blocked this user — they can't message you until you
+              unblock them (ban icon above).
+            </div>
+          )}
           {showEmojis && (
             <div className="mb-2 flex flex-wrap gap-1 rounded-xl border border-line bg-surface-2 p-2">
               {EMOJIS.map((e) => (

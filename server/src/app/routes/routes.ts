@@ -5,6 +5,8 @@ import { itemcategoryController } from "../modules/itemCategory/itemcategory.con
 import auth from "../midddlewares/auth";
 import { foundItemController } from "../modules/foundItems/foundItem.controller";
 import { claimsController } from "../modules/claim/claim.controller";
+import { blocksController } from "../blocks/blocks.controller";
+import { notificationsController } from "../notifications/notifications.controller";
 import validateRequest from "../midddlewares/validate";
 import { UserSchema } from "../modules/user/user.validate";
 import { FoundItemCategorySchema } from "../modules/itemCategory/itemCategory.validate";
@@ -126,6 +128,28 @@ router.put(
   auth(),
   claimsController.updateClaimStatus
 );
+
+// publisher opens a claim → mark viewed
+router.put("/claims/:claimId/viewed", auth(), claimsController.viewClaim);
+// publisher asks the claimant for more information
+router.put("/claims/:claimId/request-info", auth(), claimsController.requestInfo);
+// claimant adds more information
+router.put("/claims/:claimId/update-info", auth(), claimsController.updateClaimInfo);
+// claimant appeals a rejected claim
+router.put("/claims/:claimId/appeal", auth(), claimsController.appealClaim);
+// claims on the items I published (publisher inbox)
+router.get("/my/items/claims", auth(), claimsController.getClaimsForMyItems);
+
+// personal blocks (a blocked user cannot message you)
+router.post("/blocks", auth(), blocksController.blockUser);
+router.delete("/blocks/:userId", auth(), blocksController.unblockUser);
+router.get("/blocks", auth(), blocksController.getBlockedUsers);
+
+// notifications (claim + message + system alerts)
+router.get("/my/notifications", auth(), notificationsController.getMyNotifications);
+router.put("/notifications/:id/read", auth(), notificationsController.markRead);
+router.put("/notifications/read-all", auth(), notificationsController.markAllRead);
+
 ///////////////////////////////////////////////////lost item//////////////////////////////////////////////
 
 // lost item mark as found

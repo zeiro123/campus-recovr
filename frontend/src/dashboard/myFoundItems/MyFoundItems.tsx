@@ -1,14 +1,16 @@
 import { Spinner, Modal, ModalHeader, ModalBody } from "flowbite-react";
-import img from "../../assets/3576506_65968.jpg";
 import {
   useDeleteMyFoundItemMutation,
   useEditMyFoundItemMutation,
   useGetMyFoundItemQuery,
 } from "../../redux/api/api";
+import { useGetClaimsForMyItemsQuery } from "../../redux/api/claimsApi";
+import ClaimsPanel from "../../components/claims/ClaimsPanel";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toastNotify from "../../components/modal/toastNotify";
 import QueryErrorBanner from "../../components/QueryErrorBanner";
+import ItemPhoto from "../../components/item/ItemPhoto";
 import {
   FaSearch,
   FaCheckCircle,
@@ -18,6 +20,7 @@ import {
   FaEdit,
   FaTrash,
   FaInbox,
+  FaHandshake,
 } from "react-icons/fa";
 
 type MyFoundItem = {
@@ -48,6 +51,12 @@ const MyFoundItems = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<MyFoundItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Claims on my items (per-item count + review panel)
+  const { data: myItemsClaims } = useGetClaimsForMyItemsQuery();
+  const [claimsFor, setClaimsFor] = useState<MyFoundItem | null>(null);
+  const claimCountFor = (itemId?: string) =>
+    (myItemsClaims?.data ?? []).filter((c: any) => c.foundItemId === itemId)
+      .length;
 
   const handleDeleteClick = (item: MyFoundItem) => {
     setItemToDelete(item);
@@ -221,6 +230,9 @@ const MyFoundItems = () => {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-mute">
+                      Claims
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-mute">
                       Location
                     </th>
                     <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-mute">
@@ -240,13 +252,10 @@ const MyFoundItems = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 w-12 h-12 mr-4">
-                            <img
-                              className="h-12 w-12 rounded-lg border border-line object-cover"
-                              src={myFoundItem?.img || img}
+                            <ItemPhoto
+                              src={myFoundItem?.img}
                               alt={myFoundItem?.foundItemName}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = img;
-                              }}
+                              className="h-12 w-12 rounded-lg border border-line"
                             />
                           </div>
                           <div>
@@ -275,6 +284,32 @@ const MyFoundItems = () => {
                             </>
                           )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() => setClaimsFor(myFoundItem)}
+                          className="flex items-center gap-2"
+                          title="View claims on this item"
+                        >
+                          <FaHandshake
+                            className={
+                              claimCountFor(myFoundItem.id) > 0
+                                ? "text-accent"
+                                : "text-ink-mute"
+                            }
+                          />
+                          <span
+                            className={`badge ${
+                              claimCountFor(myFoundItem.id) > 0
+                                ? "badge-warn"
+                                : "badge-neutral"
+                            }`}
+                          >
+                            {claimCountFor(myFoundItem.id)} claim
+                            {claimCountFor(myFoundItem.id) === 1 ? "" : "s"}
+                          </span>
+                        </button>
                       </td>
                       <td className="px-6 py-4 text-sm text-ink-dim">
                         <div className="flex items-center">
@@ -492,6 +527,27 @@ const MyFoundItems = () => {
               </div>
             </div>
           </div>
+        </ModalBody>
+      </Modal>
+
+      {/* Claims review panel for one item */}
+      <Modal
+        show={Boolean(claimsFor)}
+        size="2xl"
+        popup={true}
+        onClose={() => setClaimsFor(null)}
+        className="border border-line bg-surface shadow-pop"
+      >
+        <ModalHeader className="border-b border-line">
+          <h3 className="flex items-center gap-2 text-xl font-semibold text-ink">
+            <FaHandshake className="text-accent" />
+            Claims — {claimsFor?.foundItemName}
+          </h3>
+        </ModalHeader>
+        <ModalBody>
+          {claimsFor && (
+            <ClaimsPanel itemId={claimsFor.id} itemType="found" />
+          )}
         </ModalBody>
       </Modal>
     </div>

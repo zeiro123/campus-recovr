@@ -34,7 +34,10 @@ export const recentActivity = async (req: Request, res: Response) => {
         where: { isDeleted: false },
         orderBy: { createdAt: "desc" },
         take: limit,
-        include: { foundItem: { select: { foundItemName: true } } },
+        include: {
+          foundItem: { select: { foundItemName: true } },
+          lostItem: { select: { lostItemName: true } },
+        },
       }),
     ]);
 
@@ -56,7 +59,7 @@ export const recentActivity = async (req: Request, res: Response) => {
       ...claims.map((claim) => ({
         id: `claim-${claim.id}`,
         type: "claim" as ActivityType,
-        title: `Claim ${claim.status.toLowerCase()} for "${claim.foundItem.foundItemName}"`,
+        title: `Claim ${claim.status.toLowerCase()} for "${claim.foundItem?.foundItemName ?? claim.lostItem?.lostItemName ?? "item"}"`,
         time: claim.createdAt,
         status: claim.status.toLowerCase(),
       })),

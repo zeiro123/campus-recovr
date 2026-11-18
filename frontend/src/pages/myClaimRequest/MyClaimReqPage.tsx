@@ -1,8 +1,9 @@
-import { useMyClaimsQuery } from "../../redux/api/api";
+import { useGetMyClaimsQuery, useAppealClaimMutation } from "../../redux/api/claimsApi";
 import type { Claim } from "../../types/types";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
 import ItemPhoto from "../../components/item/ItemPhoto";
+import toastNotify from "../../components/modal/toastNotify";
 import {
   FaSearch,
   FaTimes,
@@ -14,11 +15,16 @@ import {
   FaTimesCircle,
   FaClock,
   FaInbox,
+  FaInfoCircle,
+  FaUndo,
 } from "react-icons/fa";
 import "react-toastify/dist/ReactToastify.css";
 
 const MyClaimReqPage = () => {
-  const { data: myClaims, isLoading } = useMyClaimsQuery({});
+  const { data: myClaims, isLoading } = useGetMyClaimsQuery();
+  const [appealClaim, { isLoading: appealing }] = useAppealClaimMutation();
+  const [appealFor, setAppealFor] = useState<{ id: string; name: string } | null>(null);
+  const [appealText, setAppealText] = useState("");
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,14 +32,29 @@ const MyClaimReqPage = () => {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  // Get status icon and badge classes
-  const getStatusConfig = (status: string) => {
+  // Get status icon and badge classes (with claim-tracking nuance)
+  const getStatusConfig = (claim: Claim) => {
+    const status = claim?.status;
+    if (status === "PENDING" && claim?.infoRequest) {
+      return {
+        icon: <FaInfoCircle className="h-3.5 w-3.5" />,
+        badge: "badge badge-warn",
+        label: "Info needed",
+      };
+    }
+    if (status === "PENDING" && claim?.appealedAt) {
+      return {
+        icon: <FaUndo className="h-3.5 w-3.5" />,
+        badge: "badge badge-warn",
+        label: "Appealed",
+      };
+    }
     switch (status) {
       case "PENDING":
         return {
           icon: <FaClock className="h-3.5 w-3.5" />,
           badge: "badge badge-warn",
-          label: "Pending",
+          label: claim?.viewedAt ? "Being reviewed" : "Sent",
         };
       case "APPROVED":
       case "ACCEPTED":
@@ -305,7 +326,15 @@ const MyClaimReqPage = () => {
                 </thead>
                 <tbody className="divide-y divide-line">
                   {filteredAndSortedClaims.map((claim: Claim) => {
-                    const statusConfig = getStatusConfig(claim?.status);
+                    const statusConfig = getStatusConfig(claim);
+                    const item = claim?.foundItem ?? claim?.lostItem;
+                    const itemName =
+                      claim?.foundItem?.foundItemName ??
+                      claim?.lostItem?.lostItemName ??
+                      "Item";
+                    const itemLink = claim?.foundItem
+                      ? `/foundItems/${claim.foundItem.id}`
+                      : `/lostItems/${claim?.lostItem?.id}`;
 
                     return (
                       <tr
@@ -316,18 +345,19 @@ const MyClaimReqPage = () => {
                           <div className="flex items-center">
                             <div className="mr-4 w-12 flex-shrink-0">
                               <ItemPhoto
-                                src={claim?.foundItem?.img}
-                                alt={claim?.foundItem?.foundItemName}
+                                src={item?.img}
+                                alt={itemName}
                                 className="h-12 w-12 rounded-lg border border-line"
                               />
                             </div>
                             <div>
                               <div className="font-semibold text-ink">
-                                {claim?.foundItem?.foundItemName}
+                                {itemName}
                               </div>
                               <div className="max-w-xs truncate text-sm text-ink-mute">
-                                {claim?.foundItem?.description ||
-                                  "No description provided."}
+                                {claim?.distinguishingFeatures ||
+                                  item?.description ||
+                                  "No details provided."}
                               </div>
                             </div>
                           </div>
@@ -337,12 +367,22 @@ const MyClaimReqPage = () => {
                             {statusConfig.icon}
                             <span>{statusConfig.label}</span>
                           </span>
+                          {claim?.infoRequest && claim?.status === "PENDING" && (
+                            <p className="mt-1.5 max-w-[16rem] text-xs text-ink-mute">
+                              "{claim.infoRequest}"
+                            </p>
+                          )}
+                          {claim?.rejectionReason && claim?.status === "REJECTED" && (
+                            <p className="mt-1.5 max-w-[16rem] text-xs text-ink-mute">
+                              "{claim.rejectionReason}"
+                            </p>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-sm text-ink-dim">
                           <div className="flex items-center">
                             <FaMapMarkerAlt className="mr-2 text-ink-mute" />
                             <span className="max-w-xs truncate">
-                              {claim?.foundItem?.location ||
+                              {item?.location ||
                                 "Location not specified"}
                             </span>
                           </div>
@@ -351,7 +391,7 @@ const MyClaimReqPage = () => {
                           <div className="flex items-center">
                             <FaUser className="mr-2 text-ink-mute" />
                             <span>
-                              {claim?.foundItem?.user?.username || "Unknown"}
+                              {item?.user?.username || "Unknown"}
                             </span>
                           </div>
                         </td>
@@ -373,13 +413,31 @@ const MyClaimReqPage = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <Link
-                            to={`/foundItems/${claim?.foundItem?.id}`}
-                            className="btn btn-outline btn-sm"
-                          >
-                            <FaEye />
-                            View Details
-                          </Link>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Link
+                              to={itemLink}
+                              className="btn btn-outline btn-sm"
+                            >
+                              <FaEye />
+                              View
+                            </Link>
+                            {claim?.status === "REJECTED" && !claim?.appealedAt && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAppealFor({
+                                    id: claim.id,
+                                    name: itemName,
+                                  });
+                                  setAppealText("");
+                                }}
+                                className="btn btn-outline btn-sm text-accent-soft"
+                              >
+                                <FaUndo />
+                                Appeal
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -390,6 +448,75 @@ const MyClaimReqPage = () => {
           </div>
         )}
       </div>
+
+      {/* Appeal modal */}
+      {appealFor && (
+        <div className="fixed inset-0 z-[70] grid place-items-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-pop">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-bold text-ink">
+                  <FaUndo className="text-accent" /> Appeal this claim
+                </h3>
+                <p className="mt-1 text-sm text-ink-dim">
+                  Explain why your claim on "{appealFor.name}" was wrongly
+                  rejected. You can appeal once — the publisher will be
+                  notified and can re-review it.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAppealFor(null)}
+                aria-label="Close appeal modal"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink-mute transition hover:bg-surface-2 hover:text-ink"
+              >
+                <FaTimes className="h-4 w-4" />
+              </button>
+            </div>
+            <textarea
+              rows={4}
+              value={appealText}
+              onChange={(e) => setAppealText(e.target.value)}
+              placeholder="e.g. I have the original purchase receipt and can describe the hidden engraving inside the cover…"
+              className="field w-full resize-none"
+            />
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setAppealFor(null)}
+                className="btn border border-line px-4 py-2 text-sm text-ink-dim"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={appealing || !appealText.trim()}
+                onClick={async () => {
+                  try {
+                    await appealClaim({
+                      claimId: appealFor.id,
+                      message: appealText,
+                    }).unwrap();
+                    toastNotify({
+                      message: "Appeal sent — the publisher will re-review your claim",
+                      status: true,
+                    });
+                    setAppealFor(null);
+                  } catch (err: any) {
+                    toastNotify({
+                      message: err?.data?.message || "Could not send the appeal",
+                      status: false,
+                    });
+                  }
+                }}
+                className="btn btn-brand px-4 py-2 text-sm disabled:opacity-50"
+              >
+                {appealing ? "Sending…" : "Send appeal"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -87,7 +87,7 @@ const SingleFoundItem = () => {
         );
       } else if (res.data?.success) {
         toast.success(
-          "Claim submitted successfully! We will review your request."
+          "Claim sent — the publisher has been notified and will review it!"
         );
         setIsClaimModalOpen(false);
         reset();

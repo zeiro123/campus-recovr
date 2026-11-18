@@ -9,13 +9,15 @@ import {
   FaTimesCircle,
   FaSearch,
   FaInbox,
+  FaHandshake,
 } from "react-icons/fa";
-import img from "../../assets/3576506_65968.jpg";
 import {
   useDeleteMyLostItemMutation,
   useEditMyLostItemMutation,
   useGetMyLostItemQuery,
 } from "../../redux/api/api";
+import { useGetClaimsForMyItemsQuery } from "../../redux/api/claimsApi";
+import ClaimsPanel from "../../components/claims/ClaimsPanel";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toastNotify from "../../components/modal/toastNotify";
@@ -50,6 +52,12 @@ const MyLostItems = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<MyLostItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Claims on my items (per-item count + review panel)
+  const { data: myItemsClaims } = useGetClaimsForMyItemsQuery();
+  const [claimsFor, setClaimsFor] = useState<MyLostItem | null>(null);
+  const claimCountFor = (itemId?: string) =>
+    (myItemsClaims?.data ?? []).filter((c: any) => c.lostItemId === itemId)
+      .length;
 
   const handleDeleteClick = (item: MyLostItem) => {
     setItemToDelete(item);
@@ -261,6 +269,9 @@ const MyLostItems = () => {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-mute">
+                      Claims
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-mute">
                       Location
                     </th>
                     <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-mute">
@@ -280,13 +291,10 @@ const MyLostItems = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 w-12 h-12 mr-4">
-                            <img
-                              className="h-12 w-12 rounded-lg border border-line object-cover"
-                              src={myLostItem?.img || img}
+                            <ItemPhoto
+                              src={myLostItem?.img}
                               alt={myLostItem?.lostItemName}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = img;
-                              }}
+                              className="h-12 w-12 rounded-lg border border-line"
                             />
                           </div>
                           <div>
@@ -316,6 +324,32 @@ const MyLostItems = () => {
                             </>
                           )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() => setClaimsFor(myLostItem)}
+                          className="flex items-center gap-2"
+                          title="View claims on this item"
+                        >
+                          <FaHandshake
+                            className={
+                              claimCountFor(myLostItem.id) > 0
+                                ? "text-accent"
+                                : "text-ink-mute"
+                            }
+                          />
+                          <span
+                            className={`badge ${
+                              claimCountFor(myLostItem.id) > 0
+                                ? "badge-warn"
+                                : "badge-neutral"
+                            }`}
+                          >
+                            {claimCountFor(myLostItem.id)} claim
+                            {claimCountFor(myLostItem.id) === 1 ? "" : "s"}
+                          </span>
+                        </button>
                       </td>
                       <td className="px-6 py-4 text-sm text-ink-dim">
                         <div className="flex items-center">
@@ -542,6 +576,27 @@ const MyLostItems = () => {
               </div>
             </div>
           </div>
+        </ModalBody>
+      </Modal>
+
+      {/* Claims review panel for one item */}
+      <Modal
+        show={Boolean(claimsFor)}
+        size="2xl"
+        popup={true}
+        onClose={() => setClaimsFor(null)}
+        className="border border-line bg-surface shadow-pop"
+      >
+        <ModalHeader className="border-b border-line">
+          <h3 className="flex items-center gap-2 text-xl font-semibold text-ink">
+            <FaHandshake className="text-accent" />
+            Claims — {claimsFor?.lostItemName}
+          </h3>
+        </ModalHeader>
+        <ModalBody>
+          {claimsFor && (
+            <ClaimsPanel itemId={claimsFor.id} itemType="lost" />
+          )}
         </ModalBody>
       </Modal>
 

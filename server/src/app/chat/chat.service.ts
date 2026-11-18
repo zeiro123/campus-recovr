@@ -69,7 +69,6 @@ const getOrCreateChat = async (
 
   const existing = await prisma.conversation.findFirst({
     where: {
-      isDeleted: false,
       OR: [
         { userOneId: me.id, userTwoId: otherUserId },
         { userOneId: otherUserId, userTwoId: me.id },
@@ -81,6 +80,18 @@ const getOrCreateChat = async (
     },
   });
   if (existing) {
+    // If it was soft-deleted (delete conversation), restore it so the
+    // @@unique([userOneId, userTwoId]) doesn't block the re-create.
+    if (existing.isDeleted) {
+      return prisma.conversation.update({
+        where: { id: existing.id },
+        data: { isDeleted: false },
+        include: {
+          userOne: { select: USER_SELECT },
+          userTwo: { select: USER_SELECT },
+        },
+      });
+    }
     return existing;
   }
 
@@ -215,6 +226,19 @@ const sendMessage = async (
     throw new AppError(StatusCodes.BAD_REQUEST, "Message is too long (max 2000 characters)");
   }
   const chat = await participantChat(me.id, chatId);
+
+  // Personal blocks: if the recipient blocked me, I cannot message them
+  // (the blocker can still reach out — only the blocked user is cut off).
+  const otherId = chat.userOneId === me.id ? chat.userTwoId : chat.userOneId;
+  const blocked = await prisma.block.count({
+    where: { blockerId: otherId, blockedId: me.id },
+  });
+  if (blocked > 0) {
+    throw new AppError(
+      StatusCodes.FORBIDDEN,
+      "You can no longer message this user"
+    );
+  }
 
   const [message, updatedChat] = await prisma.$transaction([
     prisma.chatMessage.create({

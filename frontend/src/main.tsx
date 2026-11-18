@@ -26,6 +26,7 @@ import ReportLostItem from "./pages/reportlostItem/ReportLostItem.tsx";
 import ReportFoundItem from "./pages/reportFoundItem/ReportFoundItem.tsx";
 import AiSearch from "./pages/aiSearch/AiSearch.tsx";
 import Messages from "./pages/messages/Messages.tsx";
+import Notifications from "./pages/notifications/Notifications.tsx";
 import OAuthCallback from "./pages/auth/OAuthCallback.tsx";
 import NotFound from "./pages/notFound/NotFound.tsx";
 import { RequireAuth, RequireAdmin } from "./components/guards/ProtectedRoute.tsx";
@@ -86,6 +87,14 @@ const router = createBrowserRouter([
       {
         path: "/messages",
         element: <Messages />,
+      },
+      {
+        path: "/notifications",
+        element: (
+          <RequireAuth>
+            <Notifications />
+          </RequireAuth>
+        ),
       },
       {
         path: "/messages/:chatId",

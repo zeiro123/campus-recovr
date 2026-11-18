@@ -13,9 +13,11 @@ import {
   FaBars,
   FaTimes,
   FaComments,
+  FaBell,
 } from "react-icons/fa";
 import { getSocket, disconnectSocket } from "../../lib/socket";
 import { store } from "../../redux/store";
+import { useGetMyNotificationsQuery } from "../../redux/api/claimsApi";
 import { baseApi } from "../../redux/api/baseApi";
 import { useGetMyChatsQuery } from "../../redux/api/chatApi";
 
@@ -64,6 +66,12 @@ export function Navbars() {
     0
   );
 
+  // Notification badge (claims + system alerts) + live socket updates.
+  const notificationsQuery = useGetMyNotificationsQuery(undefined, {
+    skip: !users?.email,
+  });
+  const unreadNotifications = notificationsQuery.data?.data?.unreadCount ?? 0;
+
   // Close the mobile sheet whenever the route changes
   useEffect(() => {
     setMobileOpen(false);
@@ -84,6 +92,22 @@ export function Navbars() {
     s.on("message:new", onNew);
     return () => {
       s.off("message:new", onNew);
+    };
+  }, [users?.email]);
+
+  // Realtime: a new notification (claim, etc.) refreshes the bell badge.
+  useEffect(() => {
+    if (!users?.email) return;
+    const s = getSocket();
+    if (!s) return;
+    const onNotification = () => {
+      store.dispatch(
+        baseApi.util.invalidateTags(["notifications", "claims", "myClaims"])
+      );
+    };
+    s.on("notification", onNotification);
+    return () => {
+      s.off("notification", onNotification);
     };
   }, [users?.email]);
 
@@ -148,6 +172,19 @@ export function Navbars() {
         <div className="flex items-center gap-2">
           {users?.email ? (
             <div className="flex items-center gap-3">
+              {/* Notification bell with unread badge */}
+              <Link
+                to="/notifications"
+                aria-label={`Notifications — ${unreadNotifications} unread`}
+                className="relative grid h-10 w-10 place-items-center rounded-lg border border-line-strong text-ink-dim transition hover:border-accent/60 hover:text-ink"
+              >
+                <FaBell className="text-sm" />
+                {unreadNotifications > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-ink">
+                    {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                  </span>
+                )}
+              </Link>
               {/* Messages inbox with unread badge */}
               <Link
                 to="/messages"

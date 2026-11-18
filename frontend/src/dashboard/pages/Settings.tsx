@@ -7,6 +7,7 @@ import {
   FaUserTag,
   FaShieldAlt,
   FaWhatsapp,
+  FaBan,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { getErrorMessage } from "../../utils/getErrorMessage";
@@ -17,6 +18,10 @@ import {
   useChangeUsernameMutation,
 } from "../../redux/api/api";
 import { useSavePhoneMutation, useSaveNameMutation } from "../../redux/api/chatApi";
+import {
+  useGetBlockedUsersQuery,
+  useUnblockUserMutation,
+} from "../../redux/api/claimsApi";
 import { removeUserLocalStorage, setUserLocalStorage, useUserVerification } from "../../auth/auth";
 import { useNavigate } from "react-router-dom";
 
@@ -470,8 +475,84 @@ const Settings = () => {
               </button>
             </form>
           </div>
+
+          {/* Blocked Users */}
+          <BlockedUsersCard />
         </div>
       </div>
+    </div>
+  );
+};
+
+// Blocked users: unblock people you've blocked from messaging you.
+const BlockedUsersCard = () => {
+  const { data, isLoading } = useGetBlockedUsersQuery();
+  const [unblockUser, { isLoading: unblocking }] = useUnblockUserMutation();
+  const blocked = data?.data ?? [];
+
+  const handleUnblock = async (userId: string, username?: string) => {
+    try {
+      await unblockUser(userId).unwrap();
+      toast.success(`${username || "User"} unblocked`);
+    } catch (err: any) {
+      toast.error(getErrorMessage(err, "Could not unblock this user"));
+    }
+  };
+
+  return (
+    <div className="card p-6">
+      <div className="mb-5 flex items-center gap-3">
+        <FaBan className="text-rose-300" />
+        <h2 className="text-lg font-semibold text-ink">Blocked Users</h2>
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-ink-mute">Loading…</p>
+      ) : blocked.length === 0 ? (
+        <p className="text-sm text-ink-dim">
+          You haven't blocked anyone. Block someone from a chat (ban icon) if
+          they're abusing the platform — they won't be able to message you.
+        </p>
+      ) : (
+        <div className="space-y-2.5">
+          {blocked.map((b: any) => (
+            <div
+              key={b.id}
+              className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface-2 px-4 py-3"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                {b.userImg ? (
+                  <img
+                    src={b.userImg}
+                    alt=""
+                    className="h-9 w-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="grid h-9 w-9 place-items-center rounded-full bg-surface-4 text-xs font-bold text-ink">
+                    {(b.name || b.username || "U").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-ink">
+                    {b.name || b.username || "Unknown user"}
+                  </p>
+                  <p className="text-xs text-ink-mute">
+                    Can no longer message you
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleUnblock(b.userId, b.username)}
+                disabled={unblocking}
+                className="btn btn-outline shrink-0 px-3 py-1.5 text-xs disabled:opacity-50"
+              >
+                Unblock
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
