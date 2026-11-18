@@ -11,6 +11,7 @@ import FoundItemsPage from "./pages/foundItems/FoundItems.tsx";
 import SingleFoundItem from "./pages/foundItems/SingleFoundItem.tsx";
 import LostItemsPage from "./pages/lostItems/LostItems.tsx";
 import MyClaimReqPage from "./pages/myClaimRequest/MyClaimReqPage.tsx";
+import ReceivedClaimsPage from "./dashboard/receivedClaims/ReceivedClaims.tsx";
 import SingleLostItem from "./pages/lostItems/SingleLostItem.tsx";
 import DashboardLayout from "./dashboard/DashboardLayout.tsx";
 import Dashboard from "./dashboard/Dashboard.tsx";
@@ -221,6 +222,16 @@ const router = createBrowserRouter([
       <RequireAuth>
         <DashboardLayout>
           <MyClaimReqPage />
+        </DashboardLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/dashboard/receivedClaims",
+    element: (
+      <RequireAuth>
+        <DashboardLayout>
+          <ReceivedClaimsPage />
         </DashboardLayout>
       </RequireAuth>
     ),

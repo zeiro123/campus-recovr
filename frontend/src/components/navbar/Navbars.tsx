@@ -14,6 +14,7 @@ import {
   FaTimes,
   FaComments,
   FaBell,
+  FaInbox,
 } from "react-icons/fa";
 import { getSocket, disconnectSocket } from "../../lib/socket";
 import { store } from "../../redux/store";
@@ -292,6 +293,16 @@ export function Navbars() {
                   >
                     <FaUser className="text-indigo-300" />
                     <span>My claims</span>
+                  </Link>
+                </DropdownItem>
+
+                <DropdownItem className="rounded-lg text-ink-dim hover:bg-white/5 hover:text-ink">
+                  <Link
+                    to="/dashboard/receivedClaims"
+                    className="flex w-full items-center gap-2.5"
+                  >
+                    <FaInbox className="text-accent" />
+                    <span>Claims received</span>
                   </Link>
                 </DropdownItem>
 

@@ -57,6 +57,8 @@ const QUICK_LINKS = [
   { label: "Browse found items", route: "/foundItems" },
   { label: "My dashboard", route: "/dashboard" },
   { label: "My messages", route: "/messages" },
+  { label: "My claims", route: "/dashboard/myClaimRequest" },
+  { label: "Claims received", route: "/dashboard/receivedClaims" },
 ];
 
 const AiAssistant = () => {

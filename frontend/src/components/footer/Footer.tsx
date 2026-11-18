@@ -8,7 +8,8 @@ const Footers = () => {
     { label: "Found Items", to: "/foundItems" },
     { label: "Lost Items", to: "/lostItems" },
     { label: "AI Search", to: "/ai-search" },
-    { label: "About us", to: "/#aboutUs" },
+    { label: "My claims", to: "/dashboard/myClaimRequest" },
+    { label: "Claims received", to: "/dashboard/receivedClaims" },
   ];
 
   const actions = [

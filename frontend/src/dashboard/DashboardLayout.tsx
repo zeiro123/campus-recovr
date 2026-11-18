@@ -17,6 +17,7 @@ import {
   FaUser,
   FaList,
   FaComments,
+  FaInbox,
 } from "react-icons/fa";
 import { useUserVerification, signOut } from "../auth/auth";
 import "react-toastify/dist/ReactToastify.css";
@@ -99,6 +100,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       title: "My Claims",
       icon: <FaBoxOpen />,
       path: "/dashboard/myClaimRequest",
+      badge: null,
+      adminOnly: false,
+    },
+    {
+      title: "Claims received",
+      icon: <FaInbox />,
+      path: "/dashboard/receivedClaims",
       badge: null,
       adminOnly: false,
     },
@@ -305,6 +313,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 {location.pathname.includes("/lost-items") &&
                   "Lost Items Management"}
                 {location.pathname.includes("/claims") && "Claims Management"}
+                {location.pathname.includes("/receivedClaims") &&
+                  "Claims on My Items"}
                 {location.pathname.includes("/users") && "User Management"}
                 {location.pathname.includes("/categories") &&
                   "Category Management"}
@@ -423,6 +433,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   >
                     <FaUser className="text-indigo-300" />
                     <span>My claims</span>
+                  </Link>
+                </DropdownItem>
+
+                <DropdownItem className="rounded-lg text-ink-dim hover:bg-white/5 hover:text-ink">
+                  <Link
+                    to="/dashboard/receivedClaims"
+                    className="flex w-full items-center gap-2.5"
+                  >
+                    <FaInbox className="text-accent" />
+                    <span>Claims received</span>
                   </Link>
                 </DropdownItem>
 

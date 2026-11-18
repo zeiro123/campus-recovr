@@ -2,8 +2,13 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getUserLocalStorage } from "../../auth/auth";
 
 const serverUrl = import.meta.env.VITE_SERVER_URL?.replace(/\/+$/, "");
-const fallbackUrl = "http://localhost:5000/api";
-const baseUrl = serverUrl ? `${serverUrl}/api` : fallbackUrl;
+// Same-origin API in production builds (the Express server serves the built
+// frontend); localhost fallback keeps dev pointed at the local API.
+const baseUrl = serverUrl
+  ? `${serverUrl}/api`
+  : import.meta.env.PROD
+    ? "/api"
+    : "http://localhost:5001/api";
 
 export const baseApi = createApi({
   reducerPath: "baseApi",

@@ -1,0 +1,13 @@
+{
+  "name": "campus-recovr",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "npm --prefix server install && npm --prefix server run build && npm --prefix frontend install && npm --prefix frontend run build",
+    "heroku-postbuild": "npm --prefix server install && npm --prefix server run build && npm --prefix frontend install && npm --prefix frontend run build",
+    "start": "node server/dist/server.js"
+  }
+}

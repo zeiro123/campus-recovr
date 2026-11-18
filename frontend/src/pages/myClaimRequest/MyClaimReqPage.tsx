@@ -1,4 +1,4 @@
-import { useGetMyClaimsQuery, useAppealClaimMutation } from "../../redux/api/claimsApi";
+import { useGetMyClaimsQuery, useAppealClaimMutation, useUpdateClaimInfoMutation } from "../../redux/api/claimsApi";
 import type { Claim } from "../../types/types";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
@@ -23,8 +23,14 @@ import "react-toastify/dist/ReactToastify.css";
 const MyClaimReqPage = () => {
   const { data: myClaims, isLoading } = useGetMyClaimsQuery();
   const [appealClaim, { isLoading: appealing }] = useAppealClaimMutation();
+  const [updateClaimInfo, { isLoading: updatingInfo }] =
+    useUpdateClaimInfoMutation();
   const [appealFor, setAppealFor] = useState<{ id: string; name: string } | null>(null);
   const [appealText, setAppealText] = useState("");
+
+  // Respond to a publisher's "more information" request.
+  const [infoFor, setInfoFor] = useState<{ id: string; name: string } | null>(null);
+  const [infoText, setInfoText] = useState("");
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -369,7 +375,7 @@ const MyClaimReqPage = () => {
                           </span>
                           {claim?.infoRequest && claim?.status === "PENDING" && (
                             <p className="mt-1.5 max-w-[16rem] text-xs text-ink-mute">
-                              "{claim.infoRequest}"
+                              Publisher asked: "{claim.infoRequest}"
                             </p>
                           )}
                           {claim?.rejectionReason && claim?.status === "REJECTED" && (
@@ -421,6 +427,23 @@ const MyClaimReqPage = () => {
                               <FaEye />
                               View
                             </Link>
+                            {claim?.infoRequest &&
+                              claim?.status === "PENDING" && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setInfoFor({
+                                      id: claim.id,
+                                      name: itemName,
+                                    });
+                                    setInfoText("");
+                                  }}
+                                  className="btn btn-outline btn-sm text-accent-soft"
+                                >
+                                  <FaInfoCircle />
+                                  Add info
+                                </button>
+                              )}
                             {claim?.status === "REJECTED" && !claim?.appealedAt && (
                               <button
                                 type="button"
@@ -448,6 +471,75 @@ const MyClaimReqPage = () => {
           </div>
         )}
       </div>
+
+      {/* Respond to info-request modal */}
+      {infoFor && (
+        <div className="fixed inset-0 z-[70] grid place-items-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-pop">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-bold text-ink">
+                  <FaInfoCircle className="text-accent" /> Add more information
+                </h3>
+                <p className="mt-1 text-sm text-ink-dim">
+                  The publisher of "{infoFor.name}" asked for more details
+                  before deciding on your claim.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInfoFor(null)}
+                aria-label="Close info modal"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink-mute transition hover:bg-surface-2 hover:text-ink"
+              >
+                <FaTimes className="h-4 w-4" />
+              </button>
+            </div>
+            <textarea
+              rows={4}
+              value={infoText}
+              onChange={(e) => setInfoText(e.target.value)}
+              placeholder="e.g. The cover has a scratch on the corner and my initials T.M. are engraved inside…"
+              className="field w-full resize-none"
+            />
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setInfoFor(null)}
+                className="btn border border-line px-4 py-2 text-sm text-ink-dim"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={updatingInfo || !infoText.trim()}
+                onClick={async () => {
+                  try {
+                    await updateClaimInfo({
+                      claimId: infoFor.id,
+                      distinguishingFeatures: infoText,
+                    }).unwrap();
+                    toastNotify({
+                      message:
+                        "Information sent — the publisher has been notified",
+                      status: true,
+                    });
+                    setInfoFor(null);
+                  } catch (err: any) {
+                    toastNotify({
+                      message: err?.data?.message || "Could not send the information",
+                      status: false,
+                    });
+                  }
+                }}
+                className="btn btn-brand px-4 py-2 text-sm disabled:opacity-50"
+              >
+                {updatingInfo ? "Sending…" : "Send information"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Appeal modal */}
       {appealFor && (

@@ -2,6 +2,7 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import { existsSync } from "fs";
 import router from "./app/routes/routes";
 import errorHandler from "./app/midddlewares/errorHandler";
 import { apiLimiter } from "./app/midddlewares/rateLimit";
@@ -34,6 +35,17 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use("/uploads", express.static(UPLOAD_DIR));
 app.use("/api", apiLimiter, router);
+
+// Production: serve the built frontend (frontend/dist) with an SPA fallback,
+// so the API and the site share one origin. Dev (no dist) keeps the JSON root.
+const FRONTEND_DIST = path.join(__dirname, "../../frontend/dist");
+if (existsSync(FRONTEND_DIST)) {
+  app.use(express.static(FRONTEND_DIST));
+  app.get(/^\/(?!api|uploads).*/, (_req: Request, res: Response) => {
+    res.sendFile(path.join(FRONTEND_DIST, "index.html"));
+  });
+}
+
 app.use(errorHandler);
 
 app.use((req: Request, res: Response) => {
