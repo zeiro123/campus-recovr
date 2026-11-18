@@ -3,7 +3,6 @@ import type { FoundItem } from "../../types/types";
 import { Link } from "react-router-dom";
 import {
   FaSearch,
-  FaFilter,
   FaChevronLeft,
   FaChevronRight,
   FaTimes,
@@ -124,44 +123,17 @@ const PanelBody = ({
 );
 
 const FoundItemsPage = () => {
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState("foundItemName");
-  const [sortOrder, setSortOrder] = useState("asc");
   const [limit] = useState(12);
   const [selected, setSelected] = useState<FoundItem | null>(null);
 
   const { data: foundItems, isLoading } = useGetFoundItemsQuery({
-    searchTerm,
     page: currentPage,
     limit,
-    sortBy,
-    sortOrder,
   });
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1); // Reset to first page when searching
-  };
-
-  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const [field, order] = e.target.value.split("-");
-    setSortBy(field);
-    setSortOrder(order);
-    setCurrentPage(1);
-  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-  };
-
-  const clearSearch = () => {
-    setSearchTerm("");
-    setCurrentPage(1);
   };
 
   const totalPages = foundItems?.meta?.totalPage || 1;
@@ -174,17 +146,6 @@ const FoundItemsPage = () => {
           <div className="mx-auto mb-12 max-w-2xl space-y-4 text-center">
             <div className="skeleton mx-auto h-9 w-64" />
             <div className="skeleton mx-auto h-5 w-3/4 max-w-md" />
-          </div>
-
-          {/* Search Skeleton */}
-          <div className="card mb-8 p-6">
-            <div className="mx-auto max-w-4xl">
-              <div className="skeleton mb-6 h-12" />
-              <div className="flex flex-col gap-4 sm:flex-row">
-                <div className="skeleton h-10 flex-1" />
-                <div className="skeleton h-10 w-32" />
-              </div>
-            </div>
           </div>
 
           {/* Cards Skeleton */}
@@ -223,71 +184,12 @@ const FoundItemsPage = () => {
           </p>
         </div>
 
-        {/* Search and Filter Section */}
-        <div className="card mb-8 p-6">
-          <div className="mx-auto max-w-4xl">
-            {/* Search Bar */}
-            <form className="mb-6" onSubmit={handleSearch}>
-              <label className="field-label sr-only">Search</label>
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-4">
-                  <FaSearch className="text-ink-mute" />
-                </div>
-                <input
-                  type="search"
-                  id="default-search"
-                  className="field ps-11 pe-28"
-                  placeholder="Search by name, location, or description..."
-                  value={searchTerm}
-                  onChange={handleSearchInputChange}
-                />
-                <button
-                  type="submit"
-                  className="btn btn-brand absolute end-2.5 top-1/2 -translate-y-1/2"
-                >
-                  Search
-                </button>
-              </div>
-            </form>
-
-            {/* Filters Row */}
-            <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-              {/* Sort Controls */}
-              <div className="flex w-full items-center gap-3 sm:w-auto">
-                <FaFilter className="shrink-0 text-ink-mute" />
-                <select
-                  value={`${sortBy}-${sortOrder}`}
-                  onChange={handleSortChange}
-                  className="field w-full sm:w-64"
-                >
-                  <option value="foundItemName-asc">Name (A-Z)</option>
-                  <option value="foundItemName-desc">Name (Z-A)</option>
-                  <option value="date-desc">Date (Newest First)</option>
-                  <option value="date-asc">Date (Oldest First)</option>
-                  <option value="location-asc">Location (A-Z)</option>
-                  <option value="location-desc">Location (Z-A)</option>
-                </select>
-              </div>
-
-              {/* Clear Search Button */}
-              {searchTerm && (
-                <button onClick={clearSearch} className="btn btn-outline">
-                  <FaTimes />
-                  Clear search
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Search is handled by the AI Search page — browse-only listing here */}
 
         {/* Results Info */}
         <div className="mb-6">
           <p className="text-center text-sm font-medium text-ink-mute">
-            {searchTerm
-              ? `Search results for "${searchTerm}" - ${
-                  foundItems?.data?.length || 0
-                } items found`
-              : `Showing ${foundItems?.data?.length || 0} found items`}
+            {`Showing ${foundItems?.data?.length || 0} found items`}
           </p>
         </div>
       </div>
@@ -301,18 +203,12 @@ const FoundItemsPage = () => {
                   <FaSearch className="text-2xl text-ink-mute" />
                 </div>
                 <h3 className="mb-2 text-xl font-semibold text-ink">
-                  {searchTerm ? "No items found" : "No found items yet"}
+                  No found items yet
                 </h3>
                 <p className="mx-auto mb-6 max-w-md text-ink-dim">
-                  {searchTerm
-                    ? `No items found for "${searchTerm}". Try adjusting your search terms or browse all items.`
-                    : "No found items have been reported yet. Check back later or be the first to report a found item!"}
+                  No found items have been reported yet. Check back later or be
+                  the first to report a found item!
                 </p>
-                {searchTerm && (
-                  <button onClick={clearSearch} className="btn btn-outline">
-                    Clear search and view all items
-                  </button>
-                )}
               </div>
             ) : (
               <div className="mx-auto grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
@@ -323,15 +219,15 @@ const FoundItemsPage = () => {
                       type="button"
                       key={foundItem?.id}
                       onClick={() => setSelected(isSelected ? null : foundItem)}
-                      className={`card card-hover group overflow-hidden p-0 text-left transition ${
+                      className={`card card-hover group flex aspect-square flex-col overflow-hidden p-0 text-left transition ${
                         isSelected ? "ring-2 ring-accent" : ""
                       }`}
                     >
-                      <div className="relative overflow-hidden">
+                      <div className="relative min-h-0 flex-1 overflow-hidden">
                         <ItemPhoto
                           src={foundItem?.img}
                           alt={foundItem?.foundItemName}
-                          className="h-32 w-full"
+                          className="h-full w-full"
                         />
                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
 
@@ -348,7 +244,7 @@ const FoundItemsPage = () => {
                         )}
                       </div>
 
-                      <div className="p-3">
+                      <div className="shrink-0 p-3">
                         <h3 className="mb-1.5 line-clamp-1 text-sm font-bold text-ink transition-colors group-hover:text-accent">
                           {foundItem?.foundItemName}
                         </h3>
