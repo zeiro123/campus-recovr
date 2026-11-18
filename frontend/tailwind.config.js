@@ -15,6 +15,7 @@ export default {
       colors: {
         // ── University of Zimbabwe palette (dark navy + UZ orange) ──
         canvas: '#0b1424',                       // page background (deep navy)
+        card: '#152743',                         // solid panel fill (assistant, chat)
         surface: {                               // panels / cards
           DEFAULT: '#111e33',
           2: '#16263f',                          // inputs, inset areas

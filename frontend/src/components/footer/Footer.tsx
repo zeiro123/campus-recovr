@@ -103,7 +103,7 @@ const Footers = () => {
               <FaGithub size={18} />
             </a>
             <a
-              href="https://www.linkedin.com/in/your-linkedin-handle"
+              href="https://www.linkedin.com/in/testimony-chimberengwa-2b074929b"
               target="_blank"
               rel="noopener noreferrer"
               className="grid h-9 w-9 place-items-center rounded-lg text-ink-dim transition hover:bg-white/5 hover:text-ink"
