@@ -16,7 +16,7 @@
     "tsc": "tsc"
   },
   "keywords": [],
-  "author": "",
+  "author": "Testimony Chimberengwa",
   "license": "ISC",
   "devDependencies": {
     "@types/cors": "^2.8.17",

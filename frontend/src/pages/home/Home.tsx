@@ -6,10 +6,12 @@ import AboutUs from "../../components/aboutUs/aboutUs";
 import RecentFoundItem from "../../components/recentItem/RecentFoundItem";
 import Faq from "../../components/faq/Faq";
 import SuccessStats from "../../components/successStats/SuccessStats";
+import PoweredBy from "../../components/home/PoweredBy";
 
 const Home = () => {
   return (
     <>
+      <PoweredBy />
       <Banner />
       <Services />
       <SuccessStats />

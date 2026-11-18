@@ -196,3 +196,46 @@
 .marquee-paused:hover .animate-marquee {
   animation-play-state: paused;
 }
+
+/* ── "Powered by Young and Dynamic UZ" ───────────────────────────── */
+/* The partner color-wheel mark rotates like a wheel… */
+@keyframes wheel-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-wheel {
+  animation: wheel-spin 10s linear infinite;
+}
+
+/* …and the credit types itself out, then deletes and retypes. */
+.typewriter {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+  border-right: 2px solid #f87d0d;
+  width: 0;
+  animation:
+    typing 3.5s steps(31, end) infinite alternate,
+    blink-caret 0.7s step-end infinite;
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+  to {
+    width: 31ch;
+  }
+}
+
+@keyframes blink-caret {
+  50% {
+    border-color: transparent;
+  }
+}
