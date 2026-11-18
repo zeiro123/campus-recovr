@@ -28,8 +28,8 @@ const loginUser = async (data: any) => {
     throw new AppError(StatusCodes.FORBIDDEN, "Password is incorrect");
   }
 
-  const { id, name, email, role, userImg, username, phone } = user;
-  const accessToken = utils.createToken({ id, name, email, username, role, userImg, phone });
+  const { id, name, email, role, userImg, username, phone, provider } = user;
+  const accessToken = utils.createToken({ id, name, email, username, role, userImg, phone, provider });
 
   return {
     id: user.id,
@@ -38,11 +38,19 @@ const loginUser = async (data: any) => {
     email: user.email,
     role,
     phone: user.phone,
+    provider: user.provider,
     token: accessToken,
   };
 };
 
 const newPasswords = async (data: any, user: JwtPayload) => {
+  // Social users (Google/Facebook) have no usable local password.
+  if (user.provider && user.provider !== "local") {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      `You signed in with ${user.provider === "google" ? "Google" : user.provider}. Password change isn't available for social accounts.`
+    );
+  }
   console.log(data.newPassword);
   if (data.currentPassword === data.newPassword) {
     throw new AppError(StatusCodes.BAD_REQUEST, "Password is same");
@@ -116,7 +124,7 @@ const changeUsername = async (username: object, user: JwtPayload) => {
 
 // OAuth sign-in (Google / Facebook via Supabase Auth): verify the Supabase
 // access token server-side, upsert the matching app user, issue the app JWT.
-const oauthLogin = async (accessToken: string) => {
+const oauthLogin = async (accessToken: string, provider = "google") => {
   if (!accessToken) {
     throw new AppError(StatusCodes.BAD_REQUEST, "accessToken is required");
   }
@@ -185,6 +193,7 @@ const oauthLogin = async (accessToken: string) => {
         password: await utils.passwordHash(randomPassword),
         userImg: avatarUrl,
         name: fullName,
+        provider,
       },
     });
   }
@@ -198,6 +207,7 @@ const oauthLogin = async (accessToken: string) => {
     role,
     userImg,
     phone: user.phone,
+    provider: user.provider,
   });
 
   return {
@@ -206,6 +216,7 @@ const oauthLogin = async (accessToken: string) => {
     username: user.username,
     email: user.email,
     role,
+    provider: user.provider,
     token: appToken,
   };
 };

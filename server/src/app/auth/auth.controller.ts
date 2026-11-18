@@ -26,8 +26,8 @@ const login = async (req: Request, res: Response) => {
 };
 const oauthLogin = async (req: Request, res: Response) => {
   try {
-    const { accessToken } = req.body;
-    const result = await authServices.oauthLogin(accessToken);
+    const { accessToken, provider } = req.body;
+    const result = await authServices.oauthLogin(accessToken, provider);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,

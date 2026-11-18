@@ -21,6 +21,7 @@ name   String @default("")
   claim     Claim[]
   userImg   String      @default("")
   phone     String      @default("")
+  provider  String      @default("local")
   isDeleted Boolean     @default(false)
   deletedAt DateTime?
   // profile   UserProfile?

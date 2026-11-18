@@ -7,7 +7,6 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   MdEmail,
   MdPerson,
-  MdImage,
   MdVisibility,
   MdVisibilityOff,
 } from "react-icons/md";
@@ -18,7 +17,6 @@ import { supabase, oauthConfigured } from "../../lib/supabase";
 type RegisterForm = {
   email: string;
   username: string;
-  userImg?: string;
   password: string;
   conpassword: string;
 };
@@ -44,6 +42,7 @@ const Register = () => {
       return;
     }
     setOauthLoading(true);
+    localStorage.setItem("recover-oauth-provider", "google");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/oauth/callback` },
@@ -183,24 +182,6 @@ const Register = () => {
                 {errors.username?.message as string}
               </p>
             )}
-          </div>
-
-          <div>
-            <label htmlFor="userImg" className="field-label">
-              Profile Image URL
-            </label>
-            <div className="relative">
-              <input
-                id="userImg"
-                type="text"
-                {...register("userImg")}
-                placeholder="https://example.com/your-image.jpg (optional)"
-                className="field pr-10"
-              />
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
-                <MdImage className="h-4 w-4 text-ink-mute" />
-              </div>
-            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

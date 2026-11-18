@@ -39,7 +39,11 @@ const OAuthCallback = () => {
         const res = await fetch(`${apiBase}/auth/oauth`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accessToken }),
+          body: JSON.stringify({
+            accessToken,
+            provider:
+              localStorage.getItem("recover-oauth-provider") || "google",
+          }),
         });
         const json = await res.json().catch(() => null);
         const token = json?.data?.token;

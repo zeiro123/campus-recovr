@@ -34,6 +34,7 @@ const Settings = () => {
   const [savePhone, { isLoading: isPhoneLoading }] = useSavePhoneMutation();
   const [saveName, { isLoading: isNameLoading }] = useSaveNameMutation();
   const [displayName, setDisplayName] = useState(user?.name || "");
+  const isSocialUser = Boolean(user?.provider && user.provider !== "local");
 
   const passwordForm = useForm<{
     currentPassword: string;
@@ -264,14 +265,28 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* Change Password */}
-          <div className="card p-6">
+          {/* Change Password — greyed out for social (Google/Facebook) users */}
+          <div
+            className={`card p-6 ${
+              isSocialUser ? "opacity-50 pointer-events-none select-none" : ""
+            }`}
+            aria-disabled={isSocialUser}
+          >
             <div className="mb-5 flex items-center gap-3">
-              <FaKey className="text-accent" />
+              <FaKey className={isSocialUser ? "text-ink-mute" : "text-accent"} />
               <h2 className="text-lg font-semibold text-ink">
                 Change Password
               </h2>
             </div>
+
+            {isSocialUser && (
+              <p className="mb-4 rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm text-ink-dim">
+                You signed in with{" "}
+                {user?.provider === "google" ? "Google" : user?.provider}.
+                Password change isn't available for social accounts — you
+                always log in through the provider.
+              </p>
+            )}
 
             <form
               onSubmit={passwordForm.handleSubmit(handleChangePassword)}

@@ -32,6 +32,7 @@ const Login = () => {
       return;
     }
     setOauthLoading(provider);
+    localStorage.setItem("recover-oauth-provider", provider);
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
