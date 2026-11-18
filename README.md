@@ -1,4 +1,4 @@
-# 🎓 Campus RecovR — Lost & Found for the University of Zimbabwe
+# Campus RecovR — Lost & Found for the University of Zimbabwe
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
@@ -15,25 +15,25 @@ A free, community-run lost & found platform for UZ students. Lost your student I
 
 ---
 
-## ✨ Features
+## Features
 
-- 🔐 Email + password accounts with usernames (no PII) — JWT auth, bcrypt hashing
-- 📝 Report lost items (title, description, category, location, date, **photo upload**)
-- 🎒 Register found items you picked up on campus
-- 🖼️ Image upload — pick a PNG/JPEG/WebP/GIF straight from your device (replaces the old URL field)
-- 🔍 Search + filter both listings (name, location, description; sort options)
-- 🤝 Claim system for matching lost ↔ found items, with status tracking
-- 💬 **On-platform chat** — 1:1 conversations from any item page ("hey, I need this"), live via polling, with unread badges
-- 📱 **WhatsApp handoff** — optionally share your number in Settings; your listings then show a "Chat on WhatsApp" button (Zimbabwe +263 numbers handled automatically)
-- 🤖 AI-powered search (Google Gemini) with automatic fallback to keyword search
-- 🧭 **AI assistant** — floating helper button with quick links and a skippable guided walkthrough of the main features
-- 📊 User dashboard (my items, my claims, messages) + admin dashboard (users, claims, categories, stats)
-- ⭐ Testimonials / reviews page
-- 📱 Responsive dark UI
+- Email + password accounts with usernames (no PII) — JWT auth, bcrypt hashing
+- Report lost items (title, description, category, location, date, **photo upload**)
+- Register found items you picked up on campus
+- Image upload — pick a PNG/JPEG/WebP/GIF straight from your device (replaces the old URL field)
+- Search + filter both listings (name, location, description; sort options)
+- Claim system for matching lost ↔ found items, with status tracking
+- **On-platform chat** — 1:1 conversations from any item page ("hey, I need this"), live via polling, with unread badges
+- **WhatsApp handoff** — optionally share your number in Settings; your listings then show a "Chat on WhatsApp" button (Zimbabwe +263 numbers handled automatically)
+- AI-powered search (Google Gemini) with automatic fallback to keyword search
+- **AI assistant** — floating helper button with quick links and a skippable guided walkthrough of the main features
+- User dashboard (my items, my claims, messages) + admin dashboard (users, claims, categories, stats)
+- Testimonials / reviews page
+- Responsive dark UI
 
 ---
 
-## 🧑‍💻 Tech Stack
+## Tech Stack
 
 | Layer | Tech |
 |-------|------|
@@ -43,20 +43,20 @@ A free, community-run lost & found platform for UZ students. Lost your student I
 | Auth | JWT + bcrypt |
 | AI | Google Gemini API (optional — keyword-search fallback) |
 
-### 👥 User Roles
+### User Roles
 
-- 👤 **User** — register, log in, report lost/found items, claim, chat, manage profile & WhatsApp number
-- 👨‍💻 **Admin** — everything above plus user management, claims moderation, categories, and dashboard analytics
+- **User** — register, log in, report lost/found items, claim, chat, manage profile & WhatsApp number
+- **Admin** — everything above plus user management, claims moderation, categories, and dashboard analytics
 
 ---
 
-## 🚀 Local Setup (this machine)
+## Local Setup (this machine)
 
 ### 1. Database — self-contained local PostgreSQL cluster
 
 The DB is **not** the system Postgres service and **not** Docker — it's a project-local cluster in `.pgdata/` built from the PostgreSQL 18 binaries already installed, on **port 5435** (the system service on 5432, Black Heron on 5433 and Loopback on 5434 are untouched).
 
-> ⚠️ **Why the cluster must start via `server/pg.mjs`**: the postmaster is launched with a **minimal environment** on purpose. When Postgres is started from an agent/Hermes shell, its large env block is inherited by postgres child processes, which crash with `0xC0000142` (STATUS_DLL_INIT_FAILED) on Windows. `pg.mjs` sanitizes the env and redirects start output to a file.
+> **Why the cluster must start via `server/pg.mjs`**: the postmaster is launched with a **minimal environment** on purpose. When Postgres is started from an agent/Hermes shell, its large env block is inherited by postgres child processes, which crash with `0xC0000142` (STATUS_DLL_INIT_FAILED) on Windows. `pg.mjs` sanitizes the env and redirects start output to a file.
 
 ```bash
 cd server
@@ -93,7 +93,7 @@ npm install          # frontend/.env already sets VITE_SERVER_URL=http://localho
 npm run dev          # app on http://localhost:5173
 ```
 
-### 👤 Seeded accounts
+### Seeded accounts
 
 | Role | Username | Password |
 |------|----------|----------|
@@ -104,13 +104,13 @@ npm run dev          # app on http://localhost:5173
 
 ---
 
-## ☁️ Supabase later
+## Supabase later
 
 Prisma makes the swap a one-liner: change `DATABASE_URL` in `server/.env` to the Supabase connection string (`postgresql://postgres:<pw>@db.<ref>.supabase.co:5432/postgres`), run `npx prisma db push` against it, done — no code changes. (For Supabase poolers use port `6543` + `?pgbouncer=true`.)
 
 ---
 
-## 🗺️ API quick reference
+## API quick reference
 
 | Route | Purpose |
 |-------|---------|
@@ -126,13 +126,13 @@ Prisma makes the swap a one-liner: change `DATABASE_URL` in `server/.env` to the
 | `PUT /api/user/phone` | Save/remove your WhatsApp number (auth) |
 | `POST /api/ai-search` | AI search (falls back to keywords without a key) |
 
-> 🔑 **Auth:** the API accepts both `Bearer <token>` and a raw token in the `Authorization` header (upstream clients send the Bearer form).
+> **Auth:** the API accepts both `Bearer <token>` and a raw token in the `Authorization` header (upstream clients send the Bearer form).
 
-> 📅 **Date format:** item dates must be full ISO-8601 (`2026-11-13T12:00:00.000Z`).
+> **Date format:** item dates must be full ISO-8601 (`2026-11-13T12:00:00.000Z`).
 
 ---
 
-## 🗂️ Structure
+## Structure
 
 ```
 Campus_RecovR/
@@ -144,7 +144,7 @@ Campus_RecovR/
 
 ---
 
-## 👤 About the Author
+## About the Author
 
 **Testimony Chimberengwa** — cybersecurity enthusiast, Computer Engineering student at the **University of Zimbabwe**, and intern at **Econet Wireless**. I build side projects and hunt bugs on HackerOne.
 
@@ -155,6 +155,6 @@ Other work lives on [my GitHub](https://github.com/zeiro123?tab=repositories) �
 
 ---
 
-## 📜 Credits & License
+## Credits & License
 
 Original project: [alamin147/lost-and-found](https://github.com/alamin147/lost-and-found) (ISC). This fork: Campus RecovR for UZ.
